@@ -1,0 +1,83 @@
+"""
+Configuration settings for Orange Sage Backend
+"""
+
+import os
+from typing import List, Optional
+from pydantic import BaseSettings, validator
+
+
+class Settings(BaseSettings):
+    """Application settings"""
+    
+    # App settings
+    APP_NAME: str = "Orange Sage API"
+    VERSION: str = "1.0.0"
+    DEBUG: bool = False
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    
+    # Security
+    SECRET_KEY: str = "your-secret-key-change-in-production"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ALGORITHM: str = "HS256"
+    
+    # CORS
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
+    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1"]
+    
+    # Database
+    DATABASE_URL: str = "sqlite:///./orange_sage.db"
+    
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379"
+    
+    # LLM Configuration
+    OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    DEFAULT_LLM_MODEL: str = "gpt-4o-mini"
+    FALLBACK_LLM_MODEL: str = "gemini-1.5-flash"
+    
+    # Agent Configuration
+    MAX_AGENTS_PER_SCAN: int = 10
+    AGENT_TIMEOUT_MINUTES: int = 30
+    SANDBOX_TIMEOUT_MINUTES: int = 60
+    
+    # Docker/Sandbox
+    DOCKER_NETWORK: str = "orange_sage_network"
+    SANDBOX_IMAGE: str = "orange_sage/sandbox:latest"
+    SANDBOX_MEMORY_LIMIT: str = "2g"
+    SANDBOX_CPU_LIMIT: str = "1.0"
+    
+    # Storage
+    UPLOAD_DIR: str = "./uploads"
+    REPORTS_DIR: str = "./reports"
+    MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
+    
+    # Monitoring
+    ENABLE_METRICS: bool = True
+    METRICS_PORT: int = 9090
+    
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+    @validator("ALLOWED_ORIGINS", pre=True)
+    def assemble_cors_origins(cls, v):
+        if isinstance(v, str):
+            return [i.strip() for i in v.split(",")]
+        return v
+    
+    @validator("ALLOWED_HOSTS", pre=True)
+    def assemble_allowed_hosts(cls, v):
+        if isinstance(v, str):
+            return [i.strip() for i in v.split(",")]
+        return v
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+
+# Create settings instance
+settings = Settings()
