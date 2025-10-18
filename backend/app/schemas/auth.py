@@ -2,7 +2,7 @@
 Authentication schemas
 """
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator, Field
 from datetime import datetime
 from typing import Optional
 
@@ -11,7 +11,7 @@ class UserCreate(BaseModel):
     """User creation schema"""
     email: EmailStr
     username: str
-    password: str
+    password: str = Field(..., min_length=6)
     full_name: Optional[str] = None
 
 

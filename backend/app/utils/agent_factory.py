@@ -4,7 +4,7 @@ Creates and manages different types of AI agents
 """
 
 import logging
-from typing import Dict, Any, Type
+from typing import Dict, Any, Type, List
 from app.services.llm_service import LLMService
 from app.services.sandbox_service import SandboxService
 

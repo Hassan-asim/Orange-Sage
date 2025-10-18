@@ -38,32 +38,37 @@ def main():
         print("⚠️  No .env file found. Using default configuration.")
         print("   Create a .env file based on env.example for production use.")
     
-    # Check if required services are running
-    print("\n🔍 Checking required services...")
+    # Check database configuration
+    print("\n🔍 Checking database configuration...")
     
-    services_ok = True
-    
-    # Check PostgreSQL
-    if not check_service("http://localhost:5432", "PostgreSQL"):
-        print("   Please start PostgreSQL or run: docker-compose up -d postgres")
-        services_ok = False
-    
-    # Check Redis
-    if not check_service("http://localhost:6379", "Redis"):
-        print("   Please start Redis or run: docker-compose up -d redis")
-        services_ok = False
-    
-    # Check MinIO
-    if not check_service("http://localhost:9000", "MinIO"):
-        print("   Please start MinIO or run: docker-compose up -d minio")
-        services_ok = False
-    
-    if not services_ok:
-        print("\n❌ Some required services are not running.")
-        print("   Run 'docker-compose up -d' from the Orange_sage directory to start all services.")
-        sys.exit(1)
-    
-    print("\n✅ All services are running!")
+    # Check if using SQLite (local development)
+    env_file = Path("env.local") if Path("env.local").exists() else Path(".env")
+    if env_file.exists():
+        with open(env_file, 'r') as f:
+            env_content = f.read()
+            if "sqlite" in env_content.lower():
+                print("✅ Using SQLite database (local development mode)")
+                print("   No external services required for SQLite")
+            else:
+                print("⚠️  Using external database - checking services...")
+                # Check PostgreSQL
+                if not check_service("http://localhost:5432", "PostgreSQL"):
+                    print("   Please start PostgreSQL or run: docker-compose up -d postgres")
+                    sys.exit(1)
+                
+                # Check Redis
+                if not check_service("http://localhost:6379", "Redis"):
+                    print("   Please start Redis or run: docker-compose up -d redis")
+                    sys.exit(1)
+                
+                # Check MinIO
+                if not check_service("http://localhost:9000", "MinIO"):
+                    print("   Please start MinIO or run: docker-compose up -d minio")
+                    sys.exit(1)
+                
+                print("\n✅ All external services are running!")
+    else:
+        print("✅ Using default SQLite configuration")
     
     # Start the FastAPI application
     print("\n🚀 Starting FastAPI server...")
