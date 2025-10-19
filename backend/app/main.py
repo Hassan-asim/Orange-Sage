@@ -42,8 +42,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     # Initialize services
     global agent_manager, report_generator
-    agent_manager = AgentManager()
-    report_generator = ReportGenerator()
+    try:
+        agent_manager = AgentManager()
+        logger.info("✅ Agent Manager initialized")
+    except Exception as e:
+        logger.warning(f"⚠️  Agent Manager initialization failed (Docker not available): {e}")
+        agent_manager = None
+    
+    try:
+        report_generator = ReportGenerator()
+        logger.info("✅ Report Generator initialized")
+    except Exception as e:
+        logger.warning(f"⚠️  Report Generator initialization failed: {e}")
+        report_generator = None
     
     logger.info("✅ Services initialized")
     logger.info("🌐 Orange Sage Backend API ready")

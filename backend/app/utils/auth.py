@@ -14,8 +14,8 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing - using argon2 instead of bcrypt to avoid 72-byte limitation
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
