@@ -53,7 +53,7 @@ class Report(Base):
     
     # Metadata
     generation_error = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    report_metadata = Column(JSON, nullable=True)
     
     # Relationships
     scan = relationship("Scan", back_populates="reports")

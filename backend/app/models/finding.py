@@ -59,7 +59,6 @@ class Finding(Base):
     
     # Relationships
     scan = relationship("Scan", back_populates="findings")
-    comments = relationship("FindingComment", back_populates="finding")
     
     def __repr__(self):
         return f"<Finding(id={self.id}, title={self.title}, severity={self.severity})>"

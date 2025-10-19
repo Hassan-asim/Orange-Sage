@@ -6,6 +6,7 @@ Handles Docker container management for agent execution
 import asyncio
 import logging
 import docker
+from datetime import datetime
 from typing import Dict, List, Any, Optional
 from app.core.config import settings
 
@@ -28,11 +29,20 @@ class SandboxService:
             self.docker_client.ping()
             logger.info("Docker client initialized successfully")
         except Exception as e:
-            logger.error(f"Error initializing Docker client: {e}")
-            raise
+            logger.warning(f"Docker not available for local development: {e}")
+            self.docker_client = None
     
     async def create_sandbox(self, agent_id: str) -> Dict[str, Any]:
         """Create a new sandbox for agent execution"""
+        if not self.docker_client:
+            logger.warning("Docker not available - using mock sandbox for local development")
+            return {
+                "sandbox_id": f"mock_sandbox_{agent_id}",
+                "status": "running",
+                "container_id": None,
+                "created_at": datetime.utcnow()
+            }
+        
         try:
             # Create Docker container
             container = self.docker_client.containers.run(
