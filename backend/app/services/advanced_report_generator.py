@@ -26,7 +26,6 @@ from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics import renderPDF
 
 # HTML to PDF conversion
-import weasyprint
 from jinja2 import Template
 
 logger = logging.getLogger(__name__)

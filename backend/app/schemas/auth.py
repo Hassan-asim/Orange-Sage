@@ -15,6 +15,12 @@ class UserCreate(BaseModel):
     full_name: Optional[str] = None
 
 
+class UserLogin(BaseModel):
+    """User login schema"""
+    email: EmailStr
+    password: str
+
+
 class UserResponse(BaseModel):
     """User response schema"""
     id: int
