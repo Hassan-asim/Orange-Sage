@@ -70,10 +70,35 @@ npm run dev
 
 ### Python Not Found Error
 If you get "Python was not found":
-1. Make sure you checked "Add Python to PATH" during installation
-2. Restart your terminal/command prompt
-3. Try `python3` instead of `python`
-4. Try `py` instead of `python`
+
+1. **Check if Python is installed**:
+   - Open Command Prompt
+   - Try: `python --version`
+   - Try: `python3 --version` 
+   - Try: `py --version`
+
+2. **If none work, reinstall Python**:
+   - Go to https://www.python.org/downloads/
+   - Download Python 3.11.x
+   - ⚠️ **CRITICAL**: Check "Add Python to PATH" at the bottom
+   - Choose "Customize installation"
+   - Check "Add Python to environment variables"
+   - Complete installation
+
+3. **Restart everything**:
+   - Close all terminals/command prompts
+   - Restart your computer (recommended)
+   - Open new Command Prompt
+   - Try again
+
+4. **Test Python manually**:
+   ```bash
+   python test_python.py
+   ```
+
+5. **Alternative commands**:
+   - Use `py` instead of `python`
+   - Use `python3` instead of `python`
 
 ### Permission Errors
 If you get permission errors:
