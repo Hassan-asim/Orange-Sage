@@ -1,41 +1,48 @@
 # FastAPI and web framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
+fastapi
+uvicorn[standard]
+python-multipart
 
 # Database
-sqlalchemy==2.0.23
-alembic==1.12.1
-psycopg2-binary==2.9.9
+sqlalchemy
+alembic
+psycopg2-binary
 
 # Authentication
-python-jose[cryptography]==3.3.0
-passlib[argon2]==1.7.4
-argon2-cffi==23.1.0
-python-multipart==0.0.6
+python-jose[cryptography]
+passlib[argon2]
+argon2-cffi
+python-multipart
 
 # LLM APIs
-openai==1.3.7
-google-generativeai==0.3.2
+openai
+google-generativeai
 
 # Docker
-docker==6.1.3
+docker
 
 # Report generation
-reportlab==4.0.7
-python-docx==1.1.0
-jinja2==3.1.2
+reportlab
+python-docx
+jinja2
+
+# HTTP Libraries
+requests
+aiohttp
+
+# JWT Authentication
+PyJWT
 
 # Utilities
-pydantic[email]==2.5.0
-pydantic-settings==2.1.0
-python-dotenv==1.0.0
-redis==5.0.1
-celery==5.3.4
+pydantic[email]
+pydantic-settings
+python-dotenv
+redis
+celery
 
 # Development
-pytest==7.4.3
-pytest-asyncio==0.21.1
-black==23.11.0
-flake8==6.1.0
-mypy==1.7.1
+pytest
+pytest-asyncio
+black
+flake8
+mypy
