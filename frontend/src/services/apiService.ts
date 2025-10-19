@@ -1,141 +1,211 @@
-import axios from 'axios'
+/**
+ * API Service for Orange Sage Frontend
+ * Handles all API communication with the backend
+ */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+class ApiService {
+  private baseURL: string;
+  private token: string | null = null;
 
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  constructor() {
+    this.baseURL = API_BASE_URL;
+    this.token = localStorage.getItem('auth_token');
   }
-  return config
-})
 
-// Handle auth errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('access_token')
-      window.location.href = '/login'
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`API Error (${endpoint}):`, error);
+      throw error;
     }
-    return Promise.reject(error)
   }
-)
 
-export const apiService = {
-  // Health check
-  async getHealth() {
-    const response = await api.get('/health')
-    return response.data
-  },
+  // Authentication
+  async login(email: string, password: string) {
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
+    
+    const response = await fetch(`${this.baseURL}/auth/login`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Login failed');
+    }
+
+    const data = await response.json();
+    this.token = data.access_token;
+    localStorage.setItem('auth_token', this.token);
+    return data;
+  }
+
+  async register(userData: { email: string; password: string; name: string }) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async getCurrentUser() {
+    return this.request('/auth/me');
+  }
+
+  logout() {
+    this.token = null;
+    localStorage.removeItem('auth_token');
+  }
 
   // Projects
   async getProjects() {
-    const response = await api.get('/api/v1/projects')
-    return response.data
-  },
+    return this.request('/projects');
+  }
 
-  async getProject(projectId: number) {
-    const response = await api.get(`/api/v1/projects/${projectId}`)
-    return response.data
-  },
+  async createProject(projectData: { name: string; description?: string }) {
+    return this.request('/projects', {
+      method: 'POST',
+      body: JSON.stringify(projectData),
+    });
+  }
+
+  async getProject(projectId: string) {
+    return this.request(`/projects/${projectId}`);
+  }
+
+  async updateProject(projectId: string, projectData: any) {
+    return this.request(`/projects/${projectId}`, {
+      method: 'PUT',
+      body: JSON.stringify(projectData),
+    });
+  }
+
+  async deleteProject(projectId: string) {
+    return this.request(`/projects/${projectId}`, {
+      method: 'DELETE',
+    });
+  }
 
   // Targets
-  async getTargets(projectId?: number) {
-    const params = projectId ? { project_id: projectId } : {}
-    const response = await api.get('/api/v1/targets', { params })
-    return response.data
-  },
+  async getTargets(projectId: string) {
+    return this.request(`/projects/${projectId}/targets`);
+  }
 
-  async getTarget(targetId: number) {
-    const response = await api.get(`/api/v1/targets/${targetId}`)
-    return response.data
-  },
+  async createTarget(projectId: string, targetData: any) {
+    return this.request(`/projects/${projectId}/targets`, {
+      method: 'POST',
+      body: JSON.stringify(targetData),
+    });
+  }
+
+  async getTarget(targetId: string) {
+    return this.request(`/targets/${targetId}`);
+  }
+
+  async updateTarget(targetId: string, targetData: any) {
+    return this.request(`/targets/${targetId}`, {
+      method: 'PUT',
+      body: JSON.stringify(targetData),
+    });
+  }
+
+  async deleteTarget(targetId: string) {
+    return this.request(`/targets/${targetId}`, {
+      method: 'DELETE',
+    });
+  }
 
   // Scans
-  async getScans(projectId?: number, status?: string) {
-    const params: any = {}
-    if (projectId) params.project_id = projectId
-    if (status) params.status = status
-    
-    const response = await api.get('/api/v1/scans', { params })
-    return response.data
-  },
+  async getScans(projectId: string) {
+    return this.request(`/projects/${projectId}/scans`);
+  }
 
-  async getScan(scanId: number) {
-    const response = await api.get(`/api/v1/scans/${scanId}`)
-    return response.data
-  },
+  async createScan(projectId: string, targetId: string, scanData: any) {
+    return this.request(`/projects/${projectId}/targets/${targetId}/comprehensive-scan`, {
+      method: 'POST',
+      body: JSON.stringify(scanData),
+    });
+  }
 
-  async createScan(scanData: {
-    name: string
-    description?: string
-    project_id: number
-    target_id: number
-    scan_config?: any
-    agent_config?: any
-  }) {
-    const response = await api.post('/api/v1/scans', scanData)
-    return response.data
-  },
+  async getScan(scanId: string) {
+    return this.request(`/scans/${scanId}/comprehensive-status`);
+  }
 
-  async cancelScan(scanId: number) {
-    const response = await api.post(`/api/v1/scans/${scanId}/cancel`)
-    return response.data
-  },
-
-  async getScanAgents(scanId: number) {
-    const response = await api.get(`/api/v1/scans/${scanId}/agents`)
-    return response.data
-  },
+  async getScanStatus(scanId: string) {
+    return this.request(`/scans/${scanId}/comprehensive-status`);
+  }
 
   // Findings
-  async getFindings(scanId?: number, severity?: string, status?: string) {
-    const params: any = {}
-    if (scanId) params.scan_id = scanId
-    if (severity) params.severity = severity
-    if (status) params.status = status
-    
-    const response = await api.get('/api/v1/findings', { params })
-    return response.data
-  },
+  async getFindings(scanId: string) {
+    return this.request(`/scans/${scanId}/findings`);
+  }
 
-  async getFinding(findingId: number) {
-    const response = await api.get(`/api/v1/findings/${findingId}`)
-    return response.data
-  },
+  async getFinding(findingId: string) {
+    return this.request(`/findings/${findingId}`);
+  }
+
+  async updateFinding(findingId: string, findingData: any) {
+    return this.request(`/findings/${findingId}`, {
+      method: 'PUT',
+      body: JSON.stringify(findingData),
+    });
+  }
 
   // Reports
-  async generateReport(scanId: number, options: {
-    format: string
-    include_charts?: boolean
-    include_pocs?: boolean
-    branding?: string
-  }) {
-    const response = await api.post('/api/v1/reports/generate', {
-      scan_id: scanId,
-      ...options,
-    })
-    return response.data
-  },
+  async getReports(scanId: string) {
+    return this.request(`/scans/${scanId}/reports`);
+  }
 
-  async getReportStatus(reportId: number) {
-    const response = await api.get(`/api/v1/reports/${reportId}/status`)
-    return response.data
-  },
+  async generateReport(scanId: string, reportData: any) {
+    return this.request(`/scans/${scanId}/reports`, {
+      method: 'POST',
+      body: JSON.stringify(reportData),
+    });
+  }
 
-  async downloadReport(reportId: number) {
-    const response = await api.get(`/api/v1/reports/${reportId}/download`, {
-      responseType: 'blob',
-    })
-    return response.data
-  },
+  async downloadReport(scanId: string, format: string = 'pdf') {
+    const response = await fetch(`${this.baseURL}/scans/${scanId}/comprehensive-report?format=${format}`, {
+      headers: {
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download report');
+    }
+
+    return response;
+  }
+
+  // Health check
+  async healthCheck() {
+    return this.request('/health');
+  }
 }
+
+export const apiService = new ApiService();
+export default apiService;

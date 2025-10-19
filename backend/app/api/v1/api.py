@@ -3,7 +3,7 @@ API v1 router for Orange Sage
 """
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, projects, targets, scans, findings, reports, health
+from app.api.v1.endpoints import auth, projects, targets, scans, findings, reports, health, comprehensive_scan
 
 api_router = APIRouter()
 
@@ -15,3 +15,4 @@ api_router.include_router(targets.router, prefix="/targets", tags=["targets"])
 api_router.include_router(scans.router, prefix="/scans", tags=["scans"])
 api_router.include_router(findings.router, prefix="/findings", tags=["findings"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(comprehensive_scan.router, prefix="/comprehensive-scan", tags=["comprehensive-scan"])

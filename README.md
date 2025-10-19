@@ -1,6 +1,6 @@
 # Orange Sage - AI-Powered Cybersecurity Assessment Platform
 
-Orange Sage is a comprehensive web-based cybersecurity assessment platform that leverages AI agents to perform autonomous security testing. Built as a successor to Strix, it provides a modern web interface for managing security assessments, viewing findings, and generating reports.
+Orange Sage is a comprehensive web-based cybersecurity assessment platform that leverages AI agents to perform autonomous security testing. it provides a modern web interface for managing security assessments, viewing findings, and generating reports.
 
 ## 🚀 Quick Start
 
