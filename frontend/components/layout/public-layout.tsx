@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Menu } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Logo from "../Logo"
 
 interface PublicLayoutProps {
   children: React.ReactNode
@@ -35,7 +36,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           <div className="flex items-center gap-6">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3">
-              <span className="text-foreground text-xl font-semibold">Orange Sage</span>
+            <Logo />
             </Link>
 
             {/* Desktop Navigation */}

@@ -293,7 +293,7 @@ function FindingDetailsDialog({ finding, onMarkResolved }: {
           <Eye className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-border max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="bg-black border-border max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
             <DialogTitle className="text-foreground text-left flex-1">

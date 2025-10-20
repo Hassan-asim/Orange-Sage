@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 import Link from "next/link" // Import Link for client-side navigation
+import Image from "next/image"
+import Logo from "./Logo"
 
 export function Header() {
   const navItems = [
@@ -28,7 +30,8 @@ export function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <span className="text-foreground text-xl font-semibold">Orange Sage</span>
+            <Logo />
+            {/* <span className="text-foreground text-xl font-semibold">Orange Sage</span> */}
           </div>
           <nav className="hidden md:flex items-center gap-2">
             {navItems.map((item) => (
