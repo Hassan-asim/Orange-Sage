@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft } from "lucide-react"
+import Logo from "@/components/Logo"
 
 export function LoginContent() {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background gradient - matching landing page */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/50" />
-      
+
       {/* Back to home link */}
       <div className="absolute top-6 left-6 z-20">
         <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -26,10 +27,10 @@ export function LoginContent() {
         <Card className="w-full max-w-md bg-card/95 backdrop-blur-sm border-border shadow-2xl rounded-2xl">
           <CardHeader className="space-y-2 text-center">
             <div className="flex items-center gap-3 justify-center mb-2">
-              <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
-                <span className="text-secondary-foreground font-bold text-sm">OS</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                {/* <span className="text-secondary-foreground font-bold text-sm">OS</span> */}
+                <Logo />
               </div>
-              <span className="text-xl font-bold text-foreground">Orange Sage</span>
             </div>
             <CardTitle className="text-2xl font-bold text-foreground">
               Welcome back
@@ -38,7 +39,7 @@ export function LoginContent() {
               Sign in to your account to continue
             </p>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
             <form className="space-y-4">
               <div className="space-y-2">
@@ -52,7 +53,7 @@ export function LoginContent() {
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-foreground font-medium">
                   Password
@@ -64,33 +65,33 @@ export function LoginContent() {
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
-              
+
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center space-x-2 text-muted-foreground">
                   <input type="checkbox" className="rounded border-border" />
                   <span>Remember me</span>
                 </label>
-                <Link 
-                  href="/forgot-password" 
+                <Link
+                  href="/forgot-password"
                   className="text-secondary hover:text-secondary/90 font-medium"
                 >
                   Forgot password?
                 </Link>
               </div>
-              
-              <Button 
+
+              <Button
                 type="submit"
                 className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-medium text-base h-11 rounded-lg shadow-lg ring-1 ring-white/10"
               >
                 Sign In
               </Button>
             </form>
-            
+
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
-                <Link 
-                  href="/register" 
+                <Link
+                  href="/register"
                   className="text-secondary hover:text-secondary/90 font-medium underline underline-offset-4"
                 >
                   Sign up
