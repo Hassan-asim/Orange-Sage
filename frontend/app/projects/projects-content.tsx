@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Label } from "@/components/ui/label"
-import { 
+import {
   Plus,
   Search,
   Eye,
@@ -53,7 +53,7 @@ const mockProjects: Project[] = [
     tags: ["API", "E-commerce", "Critical"]
   },
   {
-    id: "2", 
+    id: "2",
     name: "Mobile App Backend",
     description: "Security testing for mobile application backend services and authentication",
     status: "Scanning",
@@ -145,7 +145,7 @@ function ProjectCard({ project }: { project: Project }) {
         <p className="text-sm text-muted-foreground line-clamp-2">
           {project.description}
         </p>
-        
+
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
@@ -240,7 +240,7 @@ function NewProjectDialog() {
           New Project
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-border">
+      <DialogContent className="bg-black border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">Create New Project</DialogTitle>
         </DialogHeader>
@@ -256,7 +256,7 @@ function NewProjectDialog() {
               className="bg-background border-border text-foreground"
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description" className="text-foreground">Description</Label>
             <Textarea

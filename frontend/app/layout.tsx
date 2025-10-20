@@ -6,8 +6,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Orange Sage',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  description: 'Advanced Penetration Testing Platform',
+  icons: '/favicon.ico',
 }
 
 export default function RootLayout({

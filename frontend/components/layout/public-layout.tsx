@@ -60,9 +60,9 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
 
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-full font-medium shadow-sm">
+            <Link href="/scans" className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-full font-medium shadow-sm">
               New Scan
-            </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu */}

@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { 
+import {
   Play,
   Filter,
   Eye,
@@ -179,11 +179,11 @@ function getElapsedTime(startedAt: string) {
   const start = new Date(startedAt)
   const now = new Date()
   const diff = Math.floor((now.getTime() - start.getTime()) / 1000)
-  
+
   const hours = Math.floor(diff / 3600)
   const minutes = Math.floor((diff % 3600) / 60)
   const seconds = diff % 60
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m ${seconds}s`
   } else if (minutes > 0) {
@@ -247,15 +247,15 @@ function RunningScanCard({ scan }: { scan: Scan }) {
           </div>
           {getStatusBadge(scan.status)}
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{scan.scanType}</span>
             <span className="text-muted-foreground">{scan.progress}%</span>
           </div>
-          
+
           <Progress value={scan.progress} className="h-2" />
-          
+
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Elapsed: {getElapsedTime(scan.startedAt)}</span>
             <span>Est. remaining: {Math.floor((scan.progress || 1) / 100 * 5)}m</span>
@@ -293,7 +293,7 @@ function NewScanDialog() {
           New Scan
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-border">
+      <DialogContent className="bg-black border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">Start New Scan</DialogTitle>
         </DialogHeader>
@@ -313,7 +313,7 @@ function NewScanDialog() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="scanType" className="text-foreground">Scan Type</Label>
             <Select value={form.scanType} onValueChange={(value) => setForm({ ...form, scanType: value })}>
@@ -344,8 +344,8 @@ function NewScanDialog() {
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={!form.projectId || !form.scanType}
             >
@@ -389,7 +389,7 @@ export function ScansContent() {
     return () => clearTimeout(timer)
   }, [])
 
-  const filteredScans = scans.filter(scan => 
+  const filteredScans = scans.filter(scan =>
     filter === "All" || scan.status === filter
   )
 
