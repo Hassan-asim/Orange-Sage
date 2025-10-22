@@ -85,11 +85,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add middleware
+# Add middleware - CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins for Cloud Run
+    allow_credentials=False,  # Must be False when using wildcard origins
     allow_methods=["*"],
     allow_headers=["*"],
 )
