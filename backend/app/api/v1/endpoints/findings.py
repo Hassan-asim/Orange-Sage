@@ -34,26 +34,26 @@ async def list_findings(
     if status:
         query = query.filter(Finding.status == FindingStatus(status))
     
-    findings = query.all()
+    findings = query.order_by(Finding.created_at.desc()).all()
     
-    return {
-        "findings": [
-            {
-                "id": finding.id,
-                "title": finding.title,
-                "description": finding.description,
-                "severity": finding.severity.value,
-                "status": finding.status.value,
-                "vulnerability_type": finding.vulnerability_type,
-                "endpoint": finding.endpoint,
-                "parameter": finding.parameter,
-                "method": finding.method,
-                "created_at": finding.created_at,
-                "created_by_agent": finding.created_by_agent
-            }
-            for finding in findings
-        ]
-    }
+    # Return array directly for frontend compatibility
+    return [
+        {
+            "id": finding.id,
+            "title": finding.title,
+            "description": finding.description,
+            "severity": finding.severity.value,
+            "status": finding.status.value,
+            "vulnerability_type": finding.vulnerability_type,
+            "endpoint": finding.endpoint,
+            "parameter": finding.parameter,
+            "method": finding.method,
+            "created_at": finding.created_at.isoformat() if finding.created_at else None,
+            "created_by_agent": finding.created_by_agent,
+            "scan_id": finding.scan_id
+        }
+        for finding in findings
+    ]
 
 
 @router.get("/{finding_id}")

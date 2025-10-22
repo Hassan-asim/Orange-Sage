@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +23,8 @@ import {
   AlertCircle,
   Info
 } from "lucide-react"
+import { findingsService, authService } from "@/lib"
+import { useToast } from "@/hooks/use-toast"
 
 // TypeScript interfaces
 interface Finding {
@@ -426,20 +429,68 @@ function EmptyState() {
 }
 
 export function FindingsContent() {
+  const router = useRouter()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("All")
   const [findings, setFindings] = useState<Finding[]>([])
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setFindings(mockFindings)
-      setIsLoading(false)
-    }, 1000)
+    if (!authService.isAuthenticated()) {
+      router.push("/login")
+      return
+    }
+    loadFindings()
+  }, [router])
 
-    return () => clearTimeout(timer)
-  }, [])
+  const loadFindings = async () => {
+    setIsLoading(true)
+    try {
+      const response = await findingsService.getFindings()
+      
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        })
+        setFindings([])
+      } else {
+        // Handle response - could be array or object with data property
+        let apiFindings = response.data || response || []
+        if (!Array.isArray(apiFindings)) {
+          apiFindings = []
+        }
+        
+        // Map API findings to display format
+        const displayFindings: Finding[] = apiFindings.map((f: any) => ({
+          id: f.id?.toString() || '',
+          projectName: f.scan_id ? `Scan #${f.scan_id}` : 'Unknown',
+          scanId: f.scan_id?.toString() || '',
+          scanType: f.finding_type || 'Security Scan',
+          title: f.title || f.description || 'Security Finding',
+          severity: (f.severity?.charAt(0).toUpperCase() + f.severity?.slice(1)) as any || 'Medium',
+          status: f.status === 'fixed' ? 'Resolved' as const : 'Unresolved' as const,
+          detectedOn: f.detected_at || f.created_at || new Date().toISOString().split('T')[0],
+          description: f.description || 'No description available',
+          stepsToReproduce: f.evidence || 'No reproduction steps available',
+          recommendedFix: f.remediation || 'Please review security best practices'
+        }))
+        setFindings(displayFindings)
+      }
+    } catch (error) {
+      console.error("Error loading findings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load findings",
+        variant: "destructive"
+      })
+      setFindings([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleMarkResolved = (id: string) => {
     setFindings(prev => prev.map(finding =>

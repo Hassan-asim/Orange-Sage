@@ -215,21 +215,22 @@ async def list_scans(
         
         scans = query.order_by(Scan.created_at.desc()).all()
         
-        return {
-            "scans": [
-                {
-                    "id": scan.id,
-                    "name": scan.name,
-                    "status": scan.status.value,
-                    "project_id": scan.project_id,
-                    "target_id": scan.target_id,
-                    "created_at": scan.created_at,
-                    "started_at": scan.started_at,
-                    "finished_at": scan.finished_at
-                }
-                for scan in scans
-            ]
-        }
+        # Return array directly for frontend compatibility
+        return [
+            {
+                "id": scan.id,
+                "name": scan.name,
+                "status": scan.status.value,
+                "project_id": scan.project_id,
+                "target_id": scan.target_id,
+                "target": scan.target.value if scan.target else "",
+                "created_at": scan.created_at.isoformat() if scan.created_at else None,
+                "started_at": scan.started_at.isoformat() if scan.started_at else None,
+                "finished_at": scan.finished_at.isoformat() if scan.finished_at else None,
+                "project_name": scan.project.name if scan.project else ""
+            }
+            for scan in scans
+        ]
         
     except Exception as e:
         raise HTTPException(

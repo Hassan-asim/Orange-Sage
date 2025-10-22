@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,11 +11,55 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { toast } from "@/components/ui/use-toast"
 import { User, Shield, Bell, Settings, AlertTriangle, Camera } from "lucide-react"
+import { authService, User as UserType } from "@/lib/auth-service"
+import { useToast } from "@/hooks/use-toast"
 
 export function SettingsContent() {
+  const router = useRouter()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("profile")
+  const [user, setUser] = useState<UserType | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      router.push("/login")
+      return
+    }
+    loadUserData()
+  }, [router])
+
+  const loadUserData = async () => {
+    setIsLoading(true)
+    try {
+      const response = await authService.getCurrentUser()
+      if (response.data) {
+        setUser(response.data)
+      } else if (response.error) {
+        toast({
+          title: "Error",
+          description: "Failed to load user data",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Get initials for avatar
+  const getInitials = (fullName?: string, username?: string, email?: string) => {
+    if (fullName) {
+      const parts = fullName.split(' ')
+      return parts.map(p => p[0]).join('').toUpperCase().slice(0, 2)
+    }
+    if (username) return username.slice(0, 2).toUpperCase()
+    if (email) return email.slice(0, 2).toUpperCase()
+    return 'U'
+  }
 
   const tabs = [
     {
@@ -81,45 +126,56 @@ export function SettingsContent() {
                   <CardTitle className="text-foreground">Profile Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="flex items-center gap-6">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage src="/placeholder-user.jpg" />
-                      <AvatarFallback className="bg-muted text-2xl">JD</AvatarFallback>
-                    </Avatar>
-                    <Button variant="outline" className="border-border">
-                      <Camera className="h-4 w-4 mr-2" />
-                      Change Avatar
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName" className="text-foreground">First Name</Label>
-                      <Input
-                        id="firstName"
-                        defaultValue="John"
-                        className="bg-background border-border text-foreground"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        defaultValue="Doe"
-                        className="bg-background border-border text-foreground"
-                      />
-                    </div>
-                  </div>
+                  {isLoading ? (
+                    <div className="text-center text-muted-foreground py-8">Loading...</div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-6">
+                        <Avatar className="h-20 w-20">
+                          <AvatarImage src="/placeholder-user.jpg" />
+                          <AvatarFallback className="bg-muted text-2xl">
+                            {getInitials(user?.full_name, user?.username, user?.email)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Button variant="outline" className="border-border">
+                          <Camera className="h-4 w-4 mr-2" />
+                          Change Avatar
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName" className="text-foreground">Full Name</Label>
+                        <Input
+                          id="fullName"
+                          defaultValue={user?.full_name || ''}
+                          className="bg-background border-border text-foreground"
+                          placeholder="Enter your full name"
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-foreground">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      defaultValue="john.doe@example.com"
-                      className="bg-background border-border text-foreground"
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="username" className="text-foreground">Username</Label>
+                        <Input
+                          id="username"
+                          defaultValue={user?.username || ''}
+                          className="bg-background border-border text-foreground"
+                          placeholder="Enter your username"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-foreground">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          defaultValue={user?.email || ''}
+                          className="bg-background border-border text-foreground"
+                          disabled
+                        />
+                        <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                      </div>
+                    </>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="bio" className="text-foreground">Bio</Label>

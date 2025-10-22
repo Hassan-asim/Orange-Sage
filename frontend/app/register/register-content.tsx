@@ -1,14 +1,94 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft } from "lucide-react"
 import Logo from "@/components/Logo"
+import { authService } from "@/lib/auth-service"
+import { useToast } from "@/hooks/use-toast"
 
 export function RegisterContent() {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    fullName: "",
+    userName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "Passwords do not match. Please try again.",
+        variant: "destructive",
+      })
+      setLoading(false)
+      return
+    }
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      toast({
+        title: "Invalid Password",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      })
+      setLoading(false)
+      return
+    }
+
+    try {
+      const response = await authService.register({
+        email: formData.email,
+        username: formData.userName,
+        password: formData.password,
+        full_name: formData.fullName,
+      })
+
+      if (response.error) {
+        toast({
+          title: "Registration Failed",
+          description: response.error,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Success!",
+          description: "Account created successfully. Please log in.",
+        })
+        router.push("/login")
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value,
+    })
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background gradient - matching landing page */}
@@ -30,7 +110,6 @@ export function RegisterContent() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                 <Logo />
               </div>
-              {/* <span className="text-xl font-bold text-foreground">Orange Sage</span> */}
             </div>
             <CardTitle className="text-2xl font-bold text-foreground">
               Create your account
@@ -41,7 +120,7 @@ export function RegisterContent() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-foreground font-medium">
                   Full Name
@@ -50,6 +129,9 @@ export function RegisterContent() {
                   id="fullName"
                   type="text"
                   placeholder="Enter your full name"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  disabled={loading}
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
@@ -61,6 +143,10 @@ export function RegisterContent() {
                   id="userName"
                   type="text"
                   placeholder="Enter your user name"
+                  value={formData.userName}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
@@ -73,6 +159,10 @@ export function RegisterContent() {
                   id="email"
                   type="email"
                   placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
@@ -85,6 +175,10 @@ export function RegisterContent() {
                   id="password"
                   type="password"
                   placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
@@ -97,15 +191,20 @@ export function RegisterContent() {
                   id="confirmPassword"
                   type="password"
                   placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
 
               <Button
                 type="submit"
+                disabled={loading}
                 className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-medium text-base h-11 rounded-lg shadow-lg ring-1 ring-white/10"
               >
-                Create Account
+                {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 

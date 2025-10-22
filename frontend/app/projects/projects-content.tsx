@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -21,6 +22,8 @@ import {
   CheckCircle,
   Clock
 } from "lucide-react"
+import { projectsService, targetsService, authService, Project as APIProject } from "@/lib"
+import { useToast } from "@/hooks/use-toast"
 
 // TypeScript interfaces
 interface Project {
@@ -37,72 +40,9 @@ interface Project {
 interface NewProjectForm {
   name: string
   description: string
+  target_url: string
   tags: string
 }
-
-// Mock data
-const mockProjects: Project[] = [
-  {
-    id: "1",
-    name: "E-commerce API Security",
-    description: "Comprehensive security assessment of the main e-commerce platform API endpoints",
-    status: "Active",
-    lastScan: "2025-10-21",
-    findings: 12,
-    createdOn: "2025-10-15",
-    tags: ["API", "E-commerce", "Critical"]
-  },
-  {
-    id: "2",
-    name: "Mobile App Backend",
-    description: "Security testing for mobile application backend services and authentication",
-    status: "Scanning",
-    lastScan: "2025-10-20",
-    findings: 8,
-    createdOn: "2025-10-10",
-    tags: ["Mobile", "Backend", "Auth"]
-  },
-  {
-    id: "3",
-    name: "Payment Gateway Integration",
-    description: "PCI DSS compliance testing and security validation for payment processing",
-    status: "Active",
-    lastScan: "2025-10-19",
-    findings: 3,
-    createdOn: "2025-10-01",
-    tags: ["Payment", "PCI-DSS", "Compliance"]
-  },
-  {
-    id: "4",
-    name: "User Authentication System",
-    description: "Security review of user login, registration, and session management",
-    status: "Archived",
-    lastScan: "2025-10-15",
-    findings: 5,
-    createdOn: "2025-09-20",
-    tags: ["Auth", "Security", "Users"]
-  },
-  {
-    id: "5",
-    name: "Admin Dashboard Security",
-    description: "Comprehensive security testing of administrative interface and permissions",
-    status: "Active",
-    lastScan: "2025-10-18",
-    findings: 15,
-    createdOn: "2025-09-25",
-    tags: ["Admin", "Dashboard", "Permissions"]
-  },
-  {
-    id: "6",
-    name: "Third-party Integrations",
-    description: "Security assessment of external service integrations and data flow",
-    status: "Scanning",
-    lastScan: "2025-10-17",
-    findings: 7,
-    createdOn: "2025-09-30",
-    tags: ["Integration", "External", "Data"]
-  }
-]
 
 function getStatusBadge(status: Project["status"]) {
   switch (status) {
@@ -214,22 +154,71 @@ function ProjectTableRow({ project }: { project: Project }) {
   )
 }
 
-function NewProjectDialog() {
+function NewProjectDialog({ onProjectCreated }: { onProjectCreated?: () => void }) {
+  const { toast } = useToast()
   const [form, setForm] = useState<NewProjectForm>({
     name: "",
     description: "",
+    target_url: "",
     tags: ""
   })
   const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("New project data:", {
-      ...form,
-      tags: form.tags.split(",").map(tag => tag.trim()).filter(Boolean)
-    })
-    setForm({ name: "", description: "", tags: "" })
-    setOpen(false)
+    setLoading(true)
+
+    try {
+      // Create the project first
+      const projectResponse = await projectsService.createProject({
+        name: form.name,
+        description: form.description || undefined
+      })
+
+      if (projectResponse.error) {
+        toast({
+          title: "Error",
+          description: projectResponse.error,
+          variant: "destructive"
+        })
+        return
+      }
+
+      // If a target URL is provided, create a target for this project
+      if (form.target_url && projectResponse.data) {
+        const targetResponse = await targetsService.createTarget({
+          url: form.target_url,
+          project_id: projectResponse.data.id,
+          name: `${form.name} Target`
+        })
+
+        if (targetResponse.error) {
+          console.warn("Target creation failed:", targetResponse.error)
+          // Don't fail the whole operation if target creation fails
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: form.target_url 
+          ? "Project and target created successfully" 
+          : "Project created successfully"
+      })
+      setForm({ name: "", description: "", target_url: "", tags: "" })
+      setOpen(false)
+      if (onProjectCreated) {
+        onProjectCreated()
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create project",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -258,6 +247,18 @@ function NewProjectDialog() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="target_url" className="text-foreground">Target URL</Label>
+            <Input
+              id="target_url"
+              type="url"
+              value={form.target_url}
+              onChange={(e) => setForm({ ...form, target_url: e.target.value })}
+              placeholder="https://example.com"
+              className="bg-background border-border text-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="description" className="text-foreground">Description</Label>
             <Textarea
               id="description"
@@ -281,11 +282,11 @@ function NewProjectDialog() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              Create Project
+            <Button type="submit" disabled={loading} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              {loading ? "Creating..." : "Create Project"}
             </Button>
           </div>
         </form>
@@ -294,7 +295,7 @@ function NewProjectDialog() {
   )
 }
 
-function EmptyState() {
+function EmptyState({ onProjectCreated }: { onProjectCreated?: () => void }) {
   return (
     <Card className="bg-card border-border">
       <CardContent className="flex flex-col items-center justify-center py-12">
@@ -303,26 +304,71 @@ function EmptyState() {
         <p className="text-muted-foreground text-center mb-6">
           Create your first project to get started with security scanning.
         </p>
-        <NewProjectDialog />
+        <NewProjectDialog onProjectCreated={onProjectCreated} />
       </CardContent>
     </Card>
   )
 }
 
 export function ProjectsContent() {
+  const router = useRouter()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [projects, setProjects] = useState<Project[]>([])
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setProjects(mockProjects)
-      setIsLoading(false)
-    }, 1000)
+    // Check authentication
+    if (!authService.isAuthenticated()) {
+      router.push("/login")
+      return
+    }
+    
+    loadProjects()
+  }, [router])
 
-    return () => clearTimeout(timer)
-  }, [])
+  const loadProjects = async () => {
+    setIsLoading(true)
+    try {
+      const response = await projectsService.getProjects()
+      
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        })
+        setProjects([])
+      } else {
+        // Convert API projects to display format - handle different response formats
+        let apiProjects = response.data || response || []
+        if (!Array.isArray(apiProjects)) {
+          apiProjects = []
+        }
+        const displayProjects: Project[] = apiProjects.map((p: APIProject) => ({
+          id: p.id.toString(),
+          name: p.name,
+          description: p.description || "No description",
+          status: p.is_active ? "Active" : "Archived",
+          lastScan: p.updated_at || p.created_at,
+          findings: 0, // Will be populated from scans
+          createdOn: p.created_at,
+          tags: []
+        }))
+        setProjects(displayProjects)
+      }
+    } catch (error) {
+      console.error("Error loading projects:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load projects",
+        variant: "destructive"
+      })
+      setProjects([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -355,7 +401,7 @@ export function ProjectsContent() {
                 className="pl-10 bg-background border-border text-foreground w-full sm:w-64"
               />
             </div>
-            <NewProjectDialog />
+            <NewProjectDialog onProjectCreated={loadProjects} />
           </div>
         </div>
 
@@ -388,7 +434,7 @@ export function ProjectsContent() {
             ))}
           </div>
         ) : filteredProjects.length === 0 ? (
-          projects.length === 0 ? <EmptyState /> : (
+          projects.length === 0 ? <EmptyState onProjectCreated={loadProjects} /> : (
             <Card className="bg-card border-border">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Search className="h-16 w-16 text-muted-foreground mb-4" />

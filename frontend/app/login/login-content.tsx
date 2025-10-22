@@ -1,14 +1,64 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft } from "lucide-react"
 import Logo from "@/components/Logo"
+import { authService } from "@/lib/auth-service"
+import { useToast } from "@/hooks/use-toast"
 
 export function LoginContent() {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      const response = await authService.login(formData)
+
+      if (response.error) {
+        toast({
+          title: "Login Failed",
+          description: response.error,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Success!",
+          description: "You have successfully logged in.",
+        })
+        router.push("/dashboard")
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value,
+    })
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background gradient - matching landing page */}
@@ -28,7 +78,6 @@ export function LoginContent() {
           <CardHeader className="space-y-2 text-center">
             <div className="flex items-center gap-3 justify-center mb-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                {/* <span className="text-secondary-foreground font-bold text-sm">OS</span> */}
                 <Logo />
               </div>
             </div>
@@ -41,7 +90,7 @@ export function LoginContent() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground font-medium">
                   Email
@@ -50,6 +99,10 @@ export function LoginContent() {
                   id="email"
                   type="email"
                   placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
@@ -62,6 +115,10 @@ export function LoginContent() {
                   id="password"
                   type="password"
                   placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />
               </div>
@@ -81,9 +138,10 @@ export function LoginContent() {
 
               <Button
                 type="submit"
+                disabled={loading}
                 className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-medium text-base h-11 rounded-lg shadow-lg ring-1 ring-white/10"
               >
-                Sign In
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 

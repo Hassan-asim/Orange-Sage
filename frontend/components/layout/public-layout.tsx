@@ -3,10 +3,12 @@
 import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Menu } from "lucide-react"
+import { Menu, LogOut } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Logo from "../Logo"
+import { authService } from "@/lib"
+import { useToast } from "@/hooks/use-toast"
 
 interface PublicLayoutProps {
   children: React.ReactNode
@@ -14,6 +16,8 @@ interface PublicLayoutProps {
 
 export function PublicLayout({ children }: PublicLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { toast } = useToast()
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard" },
@@ -26,6 +30,15 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(href + "/")
+  }
+
+  const handleLogout = () => {
+    authService.logout()
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out."
+    })
+    router.push("/login")
   }
 
   return (
@@ -59,10 +72,19 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
-
-            <Link href="/scans" className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-full font-medium shadow-sm">
-              New Scan
+            <Link href="/scans">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-full font-medium shadow-sm">
+                New Scan
+              </Button>
             </Link>
+            <Button 
+              onClick={handleLogout}
+              variant="outline" 
+              className="border-border text-foreground hover:bg-accent px-6 py-2 rounded-full font-medium"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
 
           {/* Mobile Menu */}
@@ -92,13 +114,18 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                   </Link>
                 ))}
                 <div className="flex flex-col gap-3 mt-6 pt-6 border-t border-border">
-                  <Link href="/" className="w-full">
-                    <Button variant="ghost" className="w-full justify-start text-[#888888] hover:text-foreground">
-                      Landing Page
+                  <Link href="/scans" className="w-full">
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full rounded-full font-medium shadow-sm">
+                      New Scan
                     </Button>
                   </Link>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full rounded-full font-medium shadow-sm">
-                    New Scan
+                  <Button 
+                    onClick={handleLogout}
+                    variant="outline" 
+                    className="w-full border-border text-foreground hover:bg-accent rounded-full font-medium"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
                   </Button>
                 </div>
               </nav>

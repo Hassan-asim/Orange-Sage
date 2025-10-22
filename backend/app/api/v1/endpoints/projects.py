@@ -45,18 +45,18 @@ async def list_projects(
     """List projects for the current user"""
     projects = db.query(Project).filter(Project.owner_id == current_user.id).all()
     
-    return {
-        "projects": [
-            {
-                "id": project.id,
-                "name": project.name,
-                "description": project.description,
-                "created_at": project.created_at,
-                "updated_at": project.updated_at
-            }
-            for project in projects
-        ]
-    }
+    # Return projects with is_active flag for frontend compatibility
+    return [
+        {
+            "id": project.id,
+            "name": project.name,
+            "description": project.description,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+            "updated_at": project.updated_at.isoformat() if project.updated_at else None,
+            "is_active": True  # Add is_active flag for frontend compatibility
+        }
+        for project in projects
+    ]
 
 
 @router.get("/{project_id}")

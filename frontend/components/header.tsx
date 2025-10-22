@@ -47,7 +47,12 @@ export function Header() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/dashboard"  className="hidden md:block">
+          <Link href="/login"  className="hidden md:block">
+            <Button variant="ghost" className="text-foreground hover:bg-accent px-6 py-2 rounded-full font-medium">
+              Login
+            </Button>
+          </Link>
+          <Link href="/register"  className="hidden md:block">
             <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-6 py-2 rounded-full font-medium shadow-sm">
               Try for Free
             </Button>
@@ -74,11 +79,18 @@ export function Header() {
                     {item.name}
                   </Link>
                 ))}
-                <Link href="/dashboard"  className="w-full mt-4">
-                  <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-6 py-2 rounded-full font-medium shadow-sm">
-                    Try for Free
-                  </Button>
-                </Link>
+                <div className="flex flex-col gap-3 w-full mt-4">
+                  <Link href="/login"  className="w-full">
+                    <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent px-6 py-2 rounded-full font-medium">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/register"  className="w-full">
+                    <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 w-full px-6 py-2 rounded-full font-medium shadow-sm">
+                      Try for Free
+                    </Button>
+                  </Link>
+                </div>
               </nav>
             </SheetContent>
           </Sheet>

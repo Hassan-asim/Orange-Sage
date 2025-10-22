@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,6 +26,8 @@ import {
   Zap,
   Shield
 } from "lucide-react"
+import { scansService, projectsService, targetsService, authService } from "@/lib"
+import { useToast } from "@/hooks/use-toast"
 
 // TypeScript interfaces
 interface Scan {
@@ -47,14 +50,7 @@ interface NewScanForm {
 
 type ScanFilter = "All" | "Running" | "Completed" | "Failed"
 
-// Mock data
-const mockProjects = [
-  { id: "1", name: "E-commerce API Security" },
-  { id: "2", name: "Mobile App Backend" },
-  { id: "3", name: "Payment Gateway Integration" },
-  { id: "4", name: "User Authentication System" },
-  { id: "5", name: "Admin Dashboard Security" }
-]
+// Removed mock data - using real API now
 
 const mockScans: Scan[] = [
   {
@@ -266,23 +262,73 @@ function RunningScanCard({ scan }: { scan: Scan }) {
   )
 }
 
-function NewScanDialog() {
+function NewScanDialog({ onScanCreated }: { onScanCreated?: () => void }) {
+  const { toast } = useToast()
   const [form, setForm] = useState<NewScanForm>({
     projectId: "",
     scanType: "",
     notes: ""
   })
   const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [projects, setProjects] = useState<any[]>([])
+  const [targetUrl, setTargetUrl] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (open) {
+      loadProjects()
+    }
+  }, [open])
+
+  const loadProjects = async () => {
+    const response = await projectsService.getProjects()
+    // Handle response - could be array or object with data property
+    let apiProjects = response.data || response || []
+    if (!Array.isArray(apiProjects)) {
+      apiProjects = []
+    }
+    setProjects(apiProjects)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const selectedProject = mockProjects.find(p => p.id === form.projectId)
-    console.log("New scan data:", {
-      ...form,
-      projectName: selectedProject?.name
-    })
-    setForm({ projectId: "", scanType: "", notes: "" })
-    setOpen(false)
+    setLoading(true)
+
+    try {
+      // Start a comprehensive scan
+      const response = await scansService.startComprehensiveScan({
+        target_url: targetUrl || "https://example.com",
+        project_id: parseInt(form.projectId),
+        scan_types: ["port_scan", "vulnerability_scan", "web_scan"]
+      })
+
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Scan Started!",
+          description: "Your comprehensive security scan has been initiated."
+        })
+        setForm({ projectId: "", scanType: "", notes: "" })
+        setTargetUrl("")
+        setOpen(false)
+        if (onScanCreated) {
+          onScanCreated()
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start scan",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -299,14 +345,28 @@ function NewScanDialog() {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="project" className="text-foreground">Select Project</Label>
+            <Label htmlFor="targetUrl" className="text-foreground">Target URL</Label>
+            <Input
+              id="targetUrl"
+              type="url"
+              value={targetUrl}
+              onChange={(e) => setTargetUrl(e.target.value)}
+              placeholder="https://example.com"
+              required
+              disabled={loading}
+              className="bg-background border-border text-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project" className="text-foreground">Select Project (Optional)</Label>
             <Select value={form.projectId} onValueChange={(value) => setForm({ ...form, projectId: value })}>
               <SelectTrigger className="bg-background border-border text-foreground">
                 <SelectValue placeholder="Choose a project" />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
-                {mockProjects.map((project) => (
-                  <SelectItem key={project.id} value={project.id} className="text-foreground">
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id.toString()} className="text-foreground">
                     {project.name}
                   </SelectItem>
                 ))}
@@ -341,16 +401,16 @@ function NewScanDialog() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={loading}>
               Cancel
             </Button>
             <Button
               type="submit"
               className="bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={!form.projectId || !form.scanType}
+              disabled={!targetUrl || loading}
             >
               <Play className="h-4 w-4 mr-2" />
-              Start Scan
+              {loading ? "Starting..." : "Start Scan"}
             </Button>
           </div>
         </form>
@@ -359,7 +419,7 @@ function NewScanDialog() {
   )
 }
 
-function EmptyState() {
+function EmptyState({ onScanCreated }: { onScanCreated?: () => void }) {
   return (
     <Card className="bg-card border-border">
       <CardContent className="flex flex-col items-center justify-center py-12">
@@ -368,26 +428,81 @@ function EmptyState() {
         <p className="text-muted-foreground text-center mb-6">
           Start a new scan to analyze your projects for security vulnerabilities.
         </p>
-        <NewScanDialog />
+        <NewScanDialog onScanCreated={onScanCreated} />
       </CardContent>
     </Card>
   )
 }
 
 export function ScansContent() {
+  const router = useRouter()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<ScanFilter>("All")
   const [scans, setScans] = useState<Scan[]>([])
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setScans(mockScans)
-      setIsLoading(false)
-    }, 1000)
+    if (!authService.isAuthenticated()) {
+      router.push("/login")
+      return
+    }
+    loadScans()
+  }, [router])
 
-    return () => clearTimeout(timer)
-  }, [])
+  const loadScans = async () => {
+    setIsLoading(true)
+    try {
+      const response = await scansService.getScans()
+      
+      if (response.error) {
+        toast({
+          title: "Error",
+          description: response.error,
+          variant: "destructive"
+        })
+        setScans([])
+      } else {
+        // Handle response data - could be array or object with data property
+        let apiScans = response.data || response || []
+        if (!Array.isArray(apiScans)) {
+          apiScans = []
+        }
+        const displayScans: Scan[] = apiScans.map((s: any) => ({
+          id: s.id.toString(),
+          projectName: `Scan #${s.id}`,
+          scanType: s.scan_type || "Full Scan",
+          status: s.status === "completed" ? "Completed" : 
+                  s.status === "running" ? "Running" : "Failed",
+          startedAt: s.started_at || s.created_at,
+          duration: calculateDuration(s.started_at, s.completed_at),
+          progress: s.progress || 0,
+          findings: 0,
+          notes: ""
+        }))
+        setScans(displayScans)
+      }
+    } catch (error) {
+      console.error("Error loading scans:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load scans",
+        variant: "destructive"
+      })
+      setScans([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const calculateDuration = (started: string, completed?: string) => {
+    if (!started) return "N/A"
+    const start = new Date(started).getTime()
+    const end = completed ? new Date(completed).getTime() : Date.now()
+    const duration = Math.floor((end - start) / 1000)
+    const minutes = Math.floor(duration / 60)
+    const seconds = duration % 60
+    return `${minutes}m ${seconds}s`
+  }
 
   const filteredScans = scans.filter(scan =>
     filter === "All" || scan.status === filter
@@ -421,7 +536,7 @@ export function ScansContent() {
                 <SelectItem value="Failed" className="text-foreground">Failed</SelectItem>
               </SelectContent>
             </Select>
-            <NewScanDialog />
+            <NewScanDialog onScanCreated={loadScans} />
           </div>
         </div>
 
@@ -459,7 +574,7 @@ export function ScansContent() {
             </CardContent>
           </Card>
         ) : filteredScans.length === 0 ? (
-          scans.length === 0 ? <EmptyState /> : (
+          scans.length === 0 ? <EmptyState onScanCreated={loadScans} /> : (
             <Card className="bg-card border-border">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Filter className="h-16 w-16 text-muted-foreground mb-4" />

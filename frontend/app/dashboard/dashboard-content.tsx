@@ -17,72 +17,9 @@ import {
   Wifi
 } from "lucide-react"
 import { useState, useEffect } from "react"
-
-// Mock data
-const statsData = [
-  {
-    title: "Total Projects",
-    value: "12",
-    icon: FolderOpen,
-    description: "Active projects"
-  },
-  {
-    title: "Active Scans",
-    value: "3",
-    icon: Activity,
-    description: "Currently running"
-  },
-  {
-    title: "Critical Findings",
-    value: "8",
-    icon: AlertTriangle,
-    description: "Require attention"
-  },
-  {
-    title: "Reports Generated",
-    value: "47",
-    icon: FileText,
-    description: "This month"
-  }
-]
-
-const recentActivityData = [
-  {
-    id: 1,
-    projectName: "E-commerce API",
-    scanType: "Full Security Scan",
-    status: "Completed",
-    date: "2025-10-21"
-  },
-  {
-    id: 2,
-    projectName: "Mobile App Backend",
-    scanType: "Vulnerability Assessment",
-    status: "Running",
-    date: "2025-10-21"
-  },
-  {
-    id: 3,
-    projectName: "Payment Gateway",
-    scanType: "Penetration Test",
-    status: "Failed",
-    date: "2025-10-20"
-  },
-  {
-    id: 4,
-    projectName: "User Portal",
-    scanType: "Code Review",
-    status: "Completed",
-    date: "2025-10-20"
-  },
-  {
-    id: 5,
-    projectName: "Admin Dashboard",
-    scanType: "Security Audit",
-    status: "Running",
-    date: "2025-10-19"
-  }
-]
+import { useRouter } from "next/navigation"
+import { projectsService, scansService, findingsService, reportsService, authService } from "@/lib"
+import { useToast } from "@/hooks/use-toast"
 
 const systemHealthData = [
   {
@@ -157,16 +94,135 @@ function StatCard({ title, value, icon: Icon, description, isLoading }: {
 }
 
 export function DashboardContent() {
+  const router = useRouter()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
+  const [statsData, setStatsData] = useState([
+    {
+      title: "Total Projects",
+      value: "0",
+      icon: FolderOpen,
+      description: "Active projects"
+    },
+    {
+      title: "Active Scans",
+      value: "0",
+      icon: Activity,
+      description: "Currently running"
+    },
+    {
+      title: "Critical Findings",
+      value: "0",
+      icon: AlertTriangle,
+      description: "Require attention"
+    },
+    {
+      title: "Reports Generated",
+      value: "0",
+      icon: FileText,
+      description: "Total reports"
+    }
+  ])
+  const [recentActivityData, setRecentActivityData] = useState<any[]>([])
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1500)
+    // Check authentication
+    if (!authService.isAuthenticated()) {
+      router.push("/login")
+      return
+    }
+    
+    loadDashboardData()
+  }, [router])
 
-    return () => clearTimeout(timer)
-  }, [])
+  const loadDashboardData = async () => {
+    setIsLoading(true)
+    try {
+      // Fetch all data in parallel
+      const [projectsRes, scansRes, findingsRes, reportsRes] = await Promise.all([
+        projectsService.getProjects(),
+        scansService.getScans(),
+        findingsService.getFindings(),
+        reportsService.getReports()
+      ])
+
+      // Handle errors
+      if (projectsRes.error || scansRes.error || findingsRes.error || reportsRes.error) {
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data. Showing empty state.",
+          variant: "destructive"
+        })
+      }
+
+      // Calculate stats - handle different response formats
+      let projects = projectsRes.data || projectsRes || []
+      let scans = scansRes.data || scansRes || []
+      let findings = findingsRes.data || findingsRes || []
+      let reports = reportsRes.data || reportsRes || []
+      
+      if (!Array.isArray(projects)) projects = []
+      if (!Array.isArray(scans)) scans = []
+      if (!Array.isArray(findings)) findings = []
+      if (!Array.isArray(reports)) reports = []
+
+      const activeProjects = projects.filter((p: any) => p.is_active).length
+      const activeScans = scans.filter((s: any) => s.status === "running").length
+      const criticalFindings = findings.filter((f: any) => f.severity === "critical").length
+
+      // Update stats
+      setStatsData([
+        {
+          title: "Total Projects",
+          value: activeProjects.toString(),
+          icon: FolderOpen,
+          description: "Active projects"
+        },
+        {
+          title: "Active Scans",
+          value: activeScans.toString(),
+          icon: Activity,
+          description: "Currently running"
+        },
+        {
+          title: "Critical Findings",
+          value: criticalFindings.toString(),
+          icon: AlertTriangle,
+          description: "Require attention"
+        },
+        {
+          title: "Reports Generated",
+          value: reports.length.toString(),
+          icon: FileText,
+          description: "Total reports"
+        }
+      ])
+
+      // Get recent scans for activity
+      const recentScans = scans.slice(0, 5).map((scan: any) => ({
+        id: scan.id,
+        projectName: `Scan #${scan.id}`,
+        scanType: scan.scan_type || "Security Scan",
+        status: scan.status || "pending",
+        date: scan.created_at || new Date().toISOString()
+      }))
+
+      setRecentActivityData(recentScans)
+    } catch (error) {
+      console.error("Error loading dashboard data:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleStartScan = () => {
+    router.push("/scans")
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -181,7 +237,10 @@ export function DashboardContent() {
               Quick insight into your recent activity and system health.
             </p>
           </div>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-full font-medium shadow-sm">
+          <Button 
+            onClick={handleStartScan}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-full font-medium shadow-sm"
+          >
             <Play className="h-4 w-4 mr-2" />
             Start Scan
           </Button>
@@ -231,22 +290,30 @@ export function DashboardContent() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recentActivityData.map((activity) => (
-                        <TableRow key={activity.id} className="border-border">
-                          <TableCell className="font-medium text-foreground">
-                            {activity.projectName}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {activity.scanType}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(activity.status)}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(activity.date).toLocaleDateString()}
+                      {recentActivityData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No recent activity. Start a scan to see results here.
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        recentActivityData.map((activity) => (
+                          <TableRow key={activity.id} className="border-border">
+                            <TableCell className="font-medium text-foreground">
+                              {activity.projectName}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {activity.scanType}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(activity.status)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(activity.date).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 )}

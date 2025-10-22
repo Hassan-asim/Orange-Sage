@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "@/components/ui/use-toast"
 import {
   FileText,
   Plus,
@@ -26,6 +26,8 @@ import {
   Calendar,
   BarChart3
 } from "lucide-react"
+import { reportsService, projectsService, authService } from "@/lib"
+import { useToast } from "@/hooks/use-toast"
 
 interface Report {
   id: string
@@ -85,15 +87,73 @@ const mockProjects = [
 ]
 
 export function ReportsContent() {
-  const [reports, setReports] = useState<Report[]>(mockReports)
+  const router = useRouter()
+  const { toast } = useToast()
+  const [reports, setReports] = useState<Report[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [dateFilter, setDateFilter] = useState("all")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [previewReport, setPreviewReport] = useState<Report | null>(null)
   const [generateDialog, setGenerateDialog] = useState(false)
   const [selectedProject, setSelectedProject] = useState("")
   const [scanRange, setScanRange] = useState("")
   const [reportNotes, setReportNotes] = useState("")
+  const [projects, setProjects] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      router.push("/login")
+      return
+    }
+    loadReports()
+    loadProjects()
+  }, [router])
+
+  const loadReports = async () => {
+    setIsLoading(true)
+    try {
+      const response = await reportsService.getReports()
+      
+      if (response.error) {
+        console.warn("Reports API error:", response.error)
+        // Reports might not exist yet, show empty state
+        setReports([])
+      } else {
+        let apiReports = response.data || response || []
+        if (!Array.isArray(apiReports)) {
+          apiReports = []
+        }
+        
+        const displayReports: Report[] = apiReports.map((r: any) => ({
+          id: r.id?.toString() || '',
+          title: r.title || r.report_type || 'Security Report',
+          projectName: r.scan_id ? `Scan #${r.scan_id}` : 'Unknown',
+          scanDate: r.generated_at || r.created_at || new Date().toISOString().split('T')[0],
+          findingsCount: r.total_findings || 0,
+          generatedOn: r.generated_at || r.created_at || new Date().toISOString().split('T')[0],
+          status: r.status === 'completed' ? 'ready' as const : 
+                  r.status === 'generating' ? 'pending' as const : 'failed' as const
+        }))
+        setReports(displayReports)
+      }
+    } catch (error) {
+      console.warn("Error loading reports:", error)
+      setReports([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const loadProjects = async () => {
+    try {
+      const response = await projectsService.getProjects()
+      if (response.data && Array.isArray(response.data)) {
+        setProjects(response.data.map((p: any) => p.name))
+      }
+    } catch (error) {
+      console.warn("Error loading projects:", error)
+    }
+  }
 
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -299,8 +359,8 @@ export function ReportsContent() {
                         <SelectValue placeholder="Choose a project" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        {mockProjects.map(project => (
-                          <SelectItem key={project} value={project}>{project}</SelectItem>
+                        {projects.map((project, index) => (
+                          <SelectItem key={`${project}-${index}`} value={project}>{project}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
