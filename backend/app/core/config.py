@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     DEBUG: bool = False
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = int(os.getenv("PORT", "8080"))
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
-    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1"]
+    ALLOWED_ORIGINS: List[str] = ["*"]  # Allow all origins for Cloud Run
+    ALLOWED_HOSTS: List[str] = ["*"]  # Allow all hosts for Cloud Run
     
     # Database
     DATABASE_URL: str = "sqlite:///./orange_sage.db"

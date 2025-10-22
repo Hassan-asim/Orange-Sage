@@ -35,5 +35,5 @@ RUN mkdir -p /app/data
 # Expose port
 EXPOSE 8080
 
-# Run database initialization and start server
-CMD python init_demo_user.py && uvicorn app.main:app --host 0.0.0.0 --port 8080
+# Run server (database initialization happens in lifespan)
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}
