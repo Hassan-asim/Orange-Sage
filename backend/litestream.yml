@@ -1,0 +1,9 @@
+dbs:
+  - path: /app/orange_sage.db
+    replicas:
+      - type: gcs
+        bucket: ${LITESTREAM_GCS_BUCKET}
+        path: orange_sage.db
+        # Replicate every 1 second
+        sync-interval: 1s
+

@@ -64,7 +64,7 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},SECRET_KEY=${{ secrets.SECRET_KEY }},ALGORITHM=HS256,ACCESS_TOKEN_EXPIRE_MINUTES=30" \
+            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},SECRET_KEY=${{ secrets.SECRET_KEY }},ALGORITHM=HS256,ACCESS_TOKEN_EXPIRE_MINUTES=30,LITESTREAM_GCS_BUCKET=${{ secrets.LITESTREAM_GCS_BUCKET }}" \
             --service-account ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
       - name: Get Service URL

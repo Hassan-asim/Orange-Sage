@@ -1,63 +1,22 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+__pycache__
+*.pyc
+*.pyo
+*.pyd
 .Python
-env/
+*.so
+*.egg
+*.egg-info
+dist
+build
+.env
+.venv
 venv/
 ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Testing
-.pytest_cache/
+.git
+.gitignore
+*.md
+.pytest_cache
 .coverage
 htmlcov/
-.tox/
-
-# Environment
-.env
-.env.local
-env.local
-
-# Documentation
-*.md
-docs/
-
-# Git
-.git/
-.gitignore
-
-# Database (we'll use Cloud SQL in production)
-*.db
-*.sqlite
-*.sqlite3
-
-# Logs
 *.log
-
-# OS
 .DS_Store
-Thumbs.db
-
