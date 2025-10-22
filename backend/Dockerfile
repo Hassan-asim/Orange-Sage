@@ -1,22 +1,21 @@
+# Use Python 3.11 slim image
 FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8080
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
-    g++ \
-    libpq-dev \
-    curl \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Docker CLI
-RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
-    sh get-docker.sh && \
-    rm get-docker.sh
-
-# Copy requirements first for better caching
+# Copy requirements file
 COPY requirements.txt .
 
 # Install Python dependencies
@@ -26,10 +25,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p uploads reports
+RUN mkdir -p /app/data
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run database initialization and start server
+CMD python init_demo_user.py && uvicorn app.main:app --host 0.0.0.0 --port 8080
