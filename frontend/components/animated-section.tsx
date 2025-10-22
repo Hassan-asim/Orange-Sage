@@ -7,11 +7,13 @@ interface AnimatedSectionProps {
   children: ReactNode
   className?: string
   delay?: number
+  id?: string
 }
 
-export function AnimatedSection({ children, className, delay = 0 }: AnimatedSectionProps) {
+export function AnimatedSection({ children, className, delay = 0, id }: AnimatedSectionProps) {
   return (
     <motion.div
+      id={id}
       initial={{ opacity: 0, y: 20, scale: 0.98 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true }}
