@@ -27,9 +27,10 @@ class SandboxService:
             self.docker_client = docker.from_env()
             # Test connection
             self.docker_client.ping()
-            logger.info("Docker client initialized successfully")
+            logger.info("✅ Docker client initialized successfully")
         except Exception as e:
-            logger.warning(f"Docker not available for local development: {e}")
+            logger.info("ℹ️  Docker not available - using mock sandbox mode (this is OK for local development)")
+            logger.debug(f"Docker error details: {e}")
             self.docker_client = None
     
     async def create_sandbox(self, agent_id: str) -> Dict[str, Any]:
