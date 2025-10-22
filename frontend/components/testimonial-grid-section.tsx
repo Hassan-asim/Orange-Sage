@@ -1,5 +1,13 @@
 import Image from "next/image"
 
+interface TestimonialCardProps {
+  quote: string
+  name: string
+  company: string
+  avatar: string
+  type: string
+}
+
 const testimonials = [
   {
       "quote": "Orange Sage's AI penetration testing found critical vulnerabilities in our APIs that manual testing missed. The auto-generated exploit proofs gave our developers clear understanding of the risks and exactly how to fix them.",
@@ -52,7 +60,7 @@ const testimonials = [
     }
 ]
 
-const TestimonialCard = ({ quote, name, company, avatar, type }) => {
+const TestimonialCard = ({ quote, name, company, avatar, type }: TestimonialCardProps) => {
   const isLargeCard = type.startsWith("large")
   const avatarSize = isLargeCard ? 48 : 36
   const avatarBorderRadius = isLargeCard ? "rounded-[41px]" : "rounded-[30.75px]"
