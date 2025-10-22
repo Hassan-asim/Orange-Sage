@@ -75,6 +75,28 @@ jobs:
 
       - name: Test deployment
         run: |
-          sleep 10
-          curl -f ${{ env.SERVICE_URL }} || exit 1
+          echo "Waiting for service to be ready..."
+          sleep 15
+          
+          # Retry health check up to 5 times with 10 second intervals
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "Health check attempt $((RETRY_COUNT + 1))/$MAX_RETRIES"
+            
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.SERVICE_URL }})
+            
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ]; then
+              echo "✅ Frontend health check passed with HTTP $HTTP_CODE!"
+              exit 0
+            fi
+            
+            echo "Health check returned HTTP $HTTP_CODE, retrying in 10 seconds..."
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            sleep 10
+          done
+          
+          echo "❌ Frontend health check failed after $MAX_RETRIES attempts"
+          exit 1
 
