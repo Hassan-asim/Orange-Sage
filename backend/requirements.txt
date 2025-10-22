@@ -116,7 +116,6 @@ pycairo==1.28.0
 pycparser==2.23
 pydantic==2.12.3
 pydantic-core==2.41.4
-pydantic-settings==2.1.0
 pyhanko==0.31.0
 pyhanko-certvalidator==0.29.0
 pyjwt==2.10.1
