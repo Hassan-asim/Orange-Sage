@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
-import jwt
+from jose import jwt, JWTError
 
 from app.core.database import get_db
 from app.core.config import settings
@@ -22,12 +22,20 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 @router.post("/register", response_model=UserResponse)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
-    # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
-    if existing_user:
+    # Check if email already exists
+    existing_email = db.query(User).filter(User.email == user_data.email).first()
+    if existing_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
+        )
+    
+    # Check if username already exists
+    existing_username = db.query(User).filter(User.username == user_data.username).first()
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already taken"
         )
     
     # Create new user
@@ -39,9 +47,16 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         full_name=user_data.full_name
     )
     
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user. Please try again."
+        )
     
     return UserResponse(
         id=user.id,
@@ -96,7 +111,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials"
             )
-    except jwt.PyJWTError:
+    except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
