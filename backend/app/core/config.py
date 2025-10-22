@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 180
     ALGORITHM: str = "HS256"
     
     # CORS
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     DEFAULT_LLM_MODEL: str = "gpt-4o-mini"
-    FALLBACK_LLM_MODEL: str = "gemini-1.5-flash"
+    FALLBACK_LLM_MODEL: str = "gemini-2.0-flash-lite"
     
     # Agent Configuration
     MAX_AGENTS_PER_SCAN: int = 10

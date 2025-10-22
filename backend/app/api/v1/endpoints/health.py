@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.llm_service import LLMService
 from app.services.sandbox_service import SandboxService
+from sqlalchemy import text
 
 router = APIRouter()
 
@@ -25,8 +26,8 @@ async def health_check():
 async def detailed_health_check(db: Session = Depends(get_db)):
     """Detailed health check with service status"""
     try:
-        # Check database
-        db.execute("SELECT 1")
+        # Check database (SQLAlchemy 2.x compatible)
+        db.execute(text("SELECT 1"))
         db_status = "healthy"
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
