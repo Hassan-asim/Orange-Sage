@@ -1,33 +1,31 @@
 import os
+import asyncio
+import warnings
 from typing import List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-# LangChain Imports
+# --- LangChain Imports ---
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import ChatPromptTemplate
-
-# For embeddings + LLM
-# NOTE: Suppressing the HuggingFaceEmbeddings deprecation warning to keep the code functional.
-import warnings
-# --- UPDATED WARNING SUPPRESSION ---
-# This ensures that all future deprecation warnings from LangChain related to modules are ignored.
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=UserWarning)
-# -----------------------------------
-
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+# --- Load Environment Variables ---
 load_dotenv()
 
-app = FastAPI(title="Custom Knowledge Base Chatbot")
+# --- Suppress Deprecation Warnings ---
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+
+# --- FastAPI App ---
+app = FastAPI(title="Orange Sage Knowledge Chatbot")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,55 +34,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Globals and Configuration
+# --- Globals ---
 vectorstore = None
 qa = None
 DOCS_FOLDER = "temp_docs"
+LOCK = asyncio.Lock()
 
-# --- SYSTEM PROMPT for Orange Sage Persona ---
+# --- Refined SYSTEM PROMPT ---
 SYSTEM_PROMPT = (
-    "You are the official promotional AI agent for Orange Sage, the autonomous AI-Powered Cybersecurity Assessment Platform. "
-    "Your core function is to inform and promote Orange Sage by highlighting its ability to mimic ethical hackers, "
-    "dynamically execute testing code, discover vulnerabilities, and validate them through controlled exploitation. "
-    "You exist to help users understand how Orange Sage eliminates manual pentesting overhead and static analysis false positives. "
-    
-    "**RULES:**\n"
-    "1. **PROMOTION & FOCUS:** Always answer questions by relating the topic back to Orange Sage. Emphasize its features: "
-    "   autonomous agents, dynamic testing, validated findings, web dashboard, and role-based access control.\n"
-    "2. **CYBERSECURITY:** You may answer general cybersecurity questions (e.g., about OWASP Top 10 or common vulnerabilities), "
-    "   but immediately pivot to explain how Orange Sage solves or addresses that specific problem.\n"
-    "3. **CODE/TECHNICAL QUESTIONS (STRICT REFUSAL):** If the user asks highly specific, low-level technical questions about "
-    "   Python libraries, code imports, framework components (like `CORSMiddleware`), or the underlying RAG/chatbot implementation "
-    "   (e.g., 'What Python library are you using?', 'What is FAISS?', 'How is `CORSMiddleware` used?'), you MUST politely but firmly decline. "
-    "   **Example Refusal:** 'My primary focus is the security and capabilities of the Orange Sage platform itself, not the technical build of this chat interface or its specific low-level library usage. Can I assist you with understanding our agent architecture or API contracts instead?'\n"
-    "4. **CONTEXT USE:** Answer only based on the provided documents (Scope, SRS, SDS, and technical project files). If the answer (especially non-Orange Sage related) "
-    "   is not present in the context, you MUST respond with the exact phrase: **NOT_FOUND_IN_DOCS**"
+    "You are the official AI representative of **Orange Sage**, the autonomous AI-powered cybersecurity assessment platform. "
+    "Your role is to educate and promote Orange Sage’s unique strengths — such as mimicking ethical hackers, dynamic vulnerability testing, "
+    "controlled exploit validation, and automated security analysis — while staying professional and concise.\n\n"
+
+    "**Rules:**\n"
+    "1. **Stay On-Brand:** Always relate answers back to Orange Sage and its autonomous security capabilities.\n"
+    "2. **Cybersecurity Expertise:** You may discuss security concepts (e.g., OWASP, exploits, or vulnerabilities), "
+    "but must pivot to how Orange Sage helps detect, prevent, or analyse such threats.\n"
+    "3. **Technical Implementation Questions:** Do *not* reveal internal code, libraries, or backend architecture. "
+    "Politely decline and refocus on the product capabilities instead.\n"
+    "4. **Document Context:** If an answer cannot be found in the uploaded docs (Scope, SRS, SDS, etc.), respond with "
+    "**NOT_FOUND_IN_DOCS** exactly.\n"
 )
 
-prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", SYSTEM_PROMPT),
-        ("human", "{question}\n\nContext:\n{context}")
-    ]
-)
+prompt = ChatPromptTemplate.from_messages([
+    ("system", SYSTEM_PROMPT),
+    ("human", "{question}\n\nContext:\n{context}")
+])
 
+# --- Helper Functions ---
 def build_chain_from_docs(docs):
     global vectorstore, qa
 
-    # Split into chunks
     splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
     chunks = splitter.split_documents(docs)
 
-    # HuggingFace embeddings
-    # Note: This is the line generating the deprecation warning, but it is necessary for the current setup.
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectorstore = FAISS.from_documents(chunks, embeddings)
 
-    # LLM
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7)
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-    # Chain with system prompt
     qa = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
@@ -92,50 +81,44 @@ def build_chain_from_docs(docs):
         combine_docs_chain_kwargs={"prompt": prompt},
     )
 
+
 def load_and_index_documents():
-    """Load documents from temp_docs folder and build the RAG chain."""
-    
+    """Load PDF/TXT documents and rebuild the RAG chain."""
     if not os.path.exists(DOCS_FOLDER):
-        print(f"Directory '{DOCS_FOLDER}' not found. Skipping initial indexing.")
+        print(f"⚠️ Directory '{DOCS_FOLDER}' not found.")
         return
 
     docs = []
-    print(f"\n--- Starting Indexing ---")
-    print(f"Loading documents from {DOCS_FOLDER}...")
-    
+    print("\n📄 Starting document indexing...")
     for filename in os.listdir(DOCS_FOLDER):
         path = os.path.join(DOCS_FOLDER, filename)
-        
-        # Skip directories
         if os.path.isdir(path):
-             continue
-
-        if path.lower().endswith(".pdf"):
-            loader = PyPDFLoader(path)
-        elif path.lower().endswith(".txt"):
-            # Ensure proper encoding for text files
-            loader = TextLoader(path, encoding='utf-8')
-        else:
             continue
 
         try:
+            if path.lower().endswith(".pdf"):
+                loader = PyPDFLoader(path)
+            elif path.lower().endswith(".txt"):
+                loader = TextLoader(path, encoding="utf-8")
+            else:
+                continue
+
             docs.extend(loader.load())
-            print(f"Successfully loaded: {filename}")
+            print(f"✅ Loaded: {filename}")
+
         except Exception as e:
-            # Print a clean error message and continue to the next file
-            print(f"Error loading {filename}: {e}")
+            print(f"❌ Error loading {filename}: {e}")
 
     if docs:
         build_chain_from_docs(docs)
-        print("Indexing complete. Chatbot is ready.")
+        print("✅ Indexing complete. Chatbot ready.")
     else:
-        print("No readable documents found. Chatbot is not ready.")
-    print(f"--- Indexing Finished ---\n")
+        print("⚠️ No readable files found in temp_docs.")
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Runs when the FastAPI server starts."""
+    """Auto-index documents on startup."""
     load_and_index_documents()
 
 
@@ -146,30 +129,50 @@ class QueryRequest(BaseModel):
 @app.post("/chat")
 async def chat(request: QueryRequest):
     global qa
-    
-    # Check if RAG is ready
+
     if qa is None:
-        raise HTTPException(status_code=400, 
-                            detail="The RAG index is not built. Ensure documents are in temp_docs and the server is restarted.")
+        raise HTTPException(status_code=400,
+                            detail="RAG index not built. Upload documents or restart the server.")
 
     question = request.question.strip()
-    basic_greetings = ["hi", "hello", "hey", "how are you?", "whats up?"]
-    if question.lower() in basic_greetings:
-        return {"answer": "Hello! I am the promotional AI agent for Orange Sage. How can I help you learn about autonomous security testing?"}
+    if not question:
+        raise HTTPException(status_code=400, detail="Empty question received.")
 
-    # Invoke the chain
+    basic_greetings = {"hi", "hello", "hey", "how are you", "whats up"}
+    if question.lower() in basic_greetings:
+        return {"answer": "Hello! I'm Orange Sage's AI representative. How can I help you learn about our autonomous security platform?"}
+
     response = qa.invoke({"question": question})
     answer = response.get("answer") if isinstance(response, dict) else str(response)
 
-    # --- RAG/Context Not Found Logic ---
-    LLM_NOT_FOUND = "**NOT_FOUND_IN_DOCS**"
-    USER_SORRY_MESSAGE = "Sorry, I couldn't find relevant information in the knowledge base documents."
-    
-    # Check for the LLM's special phrase (instructed via SYSTEM_PROMPT)
-    if answer and LLM_NOT_FOUND in answer:
-        return {"answer": USER_SORRY_MESSAGE}
-    
+    if "**NOT_FOUND_IN_DOCS**" in answer:
+        return {"answer": "Sorry, I couldn't find relevant information in the uploaded documents."}
+
     return {"answer": answer}
+
+
+# --- NEW: Upload Endpoint ---
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """Upload .txt or .pdf file and trigger background re-indexing."""
+    global qa
+
+    if not file.filename.lower().endswith((".txt", ".pdf")):
+        raise HTTPException(status_code=400, detail="Only .txt and .pdf files are supported.")
+
+    os.makedirs(DOCS_FOLDER, exist_ok=True)
+    file_path = os.path.join(DOCS_FOLDER, file.filename)
+
+    async with LOCK:
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+        print(f"📥 Uploaded: {file.filename}")
+
+        # Reindex asynchronously (non-blocking)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, load_and_index_documents)
+
+    return {"message": f"✅ {file.filename} uploaded and indexed successfully!"}
 
 
 @app.get("/status")
@@ -179,4 +182,4 @@ def status():
 
 @app.get("/")
 def root():
-    return {"message": "Custom Knowledge Base Chatbot API. Indexing runs automatically on startup."}
+    return {"message": "Orange Sage Knowledge Chatbot API is running. Upload documents via /upload or chat via /chat."}
