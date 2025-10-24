@@ -34,6 +34,8 @@ export const API_CONFIG = {
 }
 
 export const getApiUrl = (endpoint: string) => {
-  return `${API_CONFIG.BASE_URL}/api/${API_CONFIG.API_VERSION}${endpoint}`
+  // Ensure trailing slash for FastAPI compatibility
+  const normalizedEndpoint = endpoint.endsWith('/') ? endpoint : `${endpoint}/`
+  return `${API_CONFIG.BASE_URL}/api/${API_CONFIG.API_VERSION}${normalizedEndpoint}`
 }
 

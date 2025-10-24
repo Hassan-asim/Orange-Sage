@@ -38,6 +38,7 @@ async def create_project(
         )
 
 @router.get("/")
+@router.get("")
 async def list_projects(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)

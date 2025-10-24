@@ -82,8 +82,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan,
-    redirect_slashes=False  # Disable automatic trailing slash redirects
+    lifespan=lifespan
 )
 
 # Add middleware - CORS configuration
