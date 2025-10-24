@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/toaster'
+import ChatbotWidget from '@/components/ChatbotWidget'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ html {
       <body suppressContentEditableWarning={true}>
         {children}
         <Toaster />
+        <ChatbotWidget />
         <Analytics />
       </body>
     </html>
