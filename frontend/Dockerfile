@@ -26,6 +26,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Debug: Show what API URL is being used
+RUN echo "Building with NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
+
 # Build the application
 RUN npm run build
 

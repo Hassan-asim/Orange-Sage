@@ -47,6 +47,7 @@ jobs:
         working-directory: ./frontend
         run: |
           IMAGE_NAME="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/orange-sage/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          echo "Building frontend with BACKEND_URL: ${{ secrets.BACKEND_URL }}"
           docker build \
             --build-arg NEXT_PUBLIC_API_URL="${{ secrets.BACKEND_URL }}" \
             -t $IMAGE_NAME .
@@ -66,7 +67,6 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --timeout 300 \
-            --set-env-vars "NEXT_PUBLIC_API_URL=${{ secrets.BACKEND_URL }}" \
             --service-account ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
       - name: Get Service URL
