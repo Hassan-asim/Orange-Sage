@@ -1,0 +1,4 @@
+# Trigger frontend deployment
+# This file is used to force a frontend redeploy when backend URL changes
+DEPLOY_TIMESTAMP=2025-10-22T17:30:00Z
+
