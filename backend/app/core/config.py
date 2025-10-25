@@ -6,7 +6,9 @@ import os
 from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import validator
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class Settings(BaseSettings):
     """Application settings"""
@@ -28,8 +30,7 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: List[str] = ["*"]  # Allow all hosts for Cloud Run
     
     # Database
-    DATABASE_URL: str = "sqlite:///./orange_sage.db"
-    
+    DATABASE_URI: Optional[str] = os.getenv("DATABSE_URI")
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
     
@@ -78,7 +79,11 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra fields from .env file
 
 
 # Create settings instance
 settings = Settings()
+
+
+
