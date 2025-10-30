@@ -10,6 +10,7 @@ from app.services.sandbox_service import SandboxService
 from sqlalchemy import text
 import os
 from app.core.config import settings
+from app.utils.auth import get_current_user
 
 router = APIRouter()
 
