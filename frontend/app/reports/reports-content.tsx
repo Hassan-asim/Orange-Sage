@@ -185,11 +185,20 @@ export function ReportsContent() {
     setPreviewReport(report)
   }
 
-  const handleDownload = (report: Report) => {
-    toast({
-      title: "Download Started",
-      description: `Downloading ${report.title} report...`,
-    })
+  const handleDownload = async (report: Report) => {
+    try {
+      await reportsService.downloadReport(Number(report.id), 'pdf');
+      toast({
+        title: "Download Started",
+        description: `Downloading ${report.title} report as PDF...`,
+      })
+    } catch (error: any) {
+      toast({
+        title: "Download Failed",
+        description: error.message || 'Could not download the report.',
+        variant: 'destructive',
+      });
+    }
   }
 
   const handleDelete = (reportId: string) => {
@@ -580,8 +589,7 @@ export function ReportsContent() {
                     </Button>
                     <Button
                       onClick={() => handleDownload(previewReport)}
-                      className="bg-[#ea580c] text-white hover:bg-[#ea580c]/90"
-                    >
+                      className="bg-[#ea580c] text-white hover:bg-[#ea580c]/90">
                       <Download className="h-4 w-4 mr-2" />
                       Download PDF
                     </Button>

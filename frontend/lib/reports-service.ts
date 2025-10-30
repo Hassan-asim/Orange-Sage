@@ -34,20 +34,27 @@ class ReportsService {
     return await apiClient.post<Report>(`${API_CONFIG.ENDPOINTS.REPORTS}/generate`, data)
   }
 
-  async downloadReport(id: number): Promise<void> {
-    const response = await apiClient.get<Blob>(`${API_CONFIG.ENDPOINTS.REPORTS}/${id}/download`)
-    
-    if (response.data) {
-      // Create download link
-      const url = window.URL.createObjectURL(response.data as any)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `report_${id}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+  async downloadReport(id: number, format: 'pdf' | 'html' = 'pdf'): Promise<void> {
+    const url = `${API_CONFIG.ENDPOINTS.REPORTS}/${id}/download?format=${format}`
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(getApiUrl(url), {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      throw new Error('Failed to download report');
     }
+    const blob = await response.blob();
+    const fileExtension = format === 'pdf' ? 'pdf' : 'html';
+    const fileName = `report_${id}.${fileExtension}`;
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
   }
 
   async deleteReport(id: number): Promise<ApiResponse<void>> {
