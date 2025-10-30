@@ -3,7 +3,13 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  BASE_URL: (() => {
+    const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && raw.startsWith('http://')) {
+      return raw.replace(/^http:/, 'https:')
+    }
+    return raw
+  })(),
   API_VERSION: 'v1',
   ENDPOINTS: {
     // Auth
