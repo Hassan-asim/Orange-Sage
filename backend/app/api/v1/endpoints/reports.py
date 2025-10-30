@@ -409,7 +409,7 @@ async def download_report(
                 "Content-Length": str(len(html_content))
             }
         )
-
+        
     except HTTPException:
         raise
     except Exception as e:

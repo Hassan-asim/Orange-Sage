@@ -3,7 +3,7 @@
  */
 
 import { apiClient, ApiResponse } from './api-client'
-import { API_CONFIG } from './api-config'
+import { API_CONFIG, getApiUrl } from './api-config'
 
 export interface Report {
   id: number
