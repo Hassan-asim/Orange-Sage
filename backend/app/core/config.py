@@ -30,7 +30,12 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: List[str] = ["*"]  # Allow all hosts for Cloud Run
     
     # Database
-    DATABASE_URI: Optional[str] = os.getenv("DATABSE_URI")
+    DATABASE_URI: Optional[str] = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("DATABASE_URI")
+        or os.getenv("DATABSE_URI")  # legacy typo support
+        or "sqlite:////app/orange_sage.db"
+    )
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
     
