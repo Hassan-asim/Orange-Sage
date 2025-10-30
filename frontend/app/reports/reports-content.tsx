@@ -99,6 +99,9 @@ export function ReportsContent() {
   const [scanRange, setScanRange] = useState("")
   const [reportNotes, setReportNotes] = useState("")
   const [projects, setProjects] = useState<string[]>([])
+  const [htmlReportContent, setHtmlReportContent] = useState<string>("");
+  const [loadingHtmlReport, setLoadingHtmlReport] = useState(false);
+  const [htmlReportError, setHtmlReportError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
@@ -181,9 +184,20 @@ export function ReportsContent() {
     }
   }
 
-  const handlePreview = (report: Report) => {
-    setPreviewReport(report)
-  }
+  const handlePreview = async (report: Report) => {
+    setPreviewReport(report);
+    setHtmlReportContent("");
+    setHtmlReportError(null);
+    setLoadingHtmlReport(true);
+    try {
+      const html = await reportsService.fetchReportHtml(Number(report.id));
+      setHtmlReportContent(html);
+    } catch (e:any) {
+      setHtmlReportError(e.message);
+    } finally {
+      setLoadingHtmlReport(false);
+    }
+  };
 
   const handleDownload = async (report: Report) => {
     try {
@@ -524,78 +538,96 @@ export function ReportsContent() {
           </Card>
 
           {/* Report Preview Dialog */}
-          <Dialog open={!!previewReport} onOpenChange={() => setPreviewReport(null)}>
+          <Dialog open={!!previewReport} onOpenChange={() => {
+            setPreviewReport(null);
+            setHtmlReportContent("");
+            setHtmlReportError(null);
+            setLoadingHtmlReport(false);
+          }}>
             <DialogContent className="bg-card border-border max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="text-foreground">Report Preview</DialogTitle>
               </DialogHeader>
-              {previewReport && (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-medium text-foreground">{previewReport.title}</h3>
-                    <p className="text-muted-foreground">
-                      Project: {previewReport.projectName} • Generated: {new Date(previewReport.generatedOn).toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-4">
-                    <Card className="bg-background border-border">
-                      <CardContent className="p-3">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Critical</p>
-                          <p className="text-xl font-bold text-red-400">2</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-background border-border">
-                      <CardContent className="p-3">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">High</p>
-                          <p className="text-xl font-bold text-orange-400">5</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-background border-border">
-                      <CardContent className="p-3">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Medium</p>
-                          <p className="text-xl font-bold text-yellow-400">8</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-background border-border">
-                      <CardContent className="p-3">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Low</p>
-                          <p className="text-xl font-bold text-blue-400">8</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="p-4 bg-background rounded-lg border border-border">
-                    <h4 className="font-medium text-foreground mb-2">Key Insights</h4>
-                    <p className="text-sm text-muted-foreground">
-                      This security assessment identified {previewReport.findingsCount} potential vulnerabilities across your codebase.
-                      The most critical issues include SQL injection vulnerabilities in the authentication module and
-                      cross-site scripting (XSS) risks in user input handling. Immediate attention is recommended for
-                      high-severity findings to maintain security compliance.
-                    </p>
-                  </div>
-
-                  <div className="flex justify-end gap-3">
-                    <Button variant="ghost" onClick={() => setPreviewReport(null)}>
-                      Close
-                    </Button>
-                    <Button
-                      onClick={() => handleDownload(previewReport)}
-                      className="bg-[#ea580c] text-white hover:bg-[#ea580c]/90">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
-                    </Button>
-                  </div>
-                </div>
+              {loadingHtmlReport ? (
+                <div className="text-center py-10">Loading HTML report...</div>
+              ) : htmlReportError ? (
+                <div className="text-red-600 py-10">{htmlReportError}</div>
+              ) : htmlReportContent ? (
+                <iframe
+                  srcDoc={htmlReportContent}
+                  className="w-full h-[70vh] bg-white border"
+                  title="HTML Report Preview"
+                  sandbox="allow-same-origin"
+                />
+              ) : (
+                <div className="text-muted-foreground py-10">No report loaded.</div>
               )}
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium text-foreground">{previewReport?.title}</h3>
+                  <p className="text-muted-foreground">
+                    Project: {previewReport?.projectName} • Generated: {new Date(previewReport?.generatedOn || '').toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-4 gap-4">
+                  <Card className="bg-background border-border">
+                    <CardContent className="p-3">
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Critical</p>
+                        <p className="text-xl font-bold text-red-400">2</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-background border-border">
+                    <CardContent className="p-3">
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">High</p>
+                        <p className="text-xl font-bold text-orange-400">5</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-background border-border">
+                    <CardContent className="p-3">
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Medium</p>
+                        <p className="text-xl font-bold text-yellow-400">8</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-background border-border">
+                    <CardContent className="p-3">
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Low</p>
+                        <p className="text-xl font-bold text-blue-400">8</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="p-4 bg-background rounded-lg border border-border">
+                  <h4 className="font-medium text-foreground mb-2">Key Insights</h4>
+                  <p className="text-sm text-muted-foreground">
+                    This security assessment identified {previewReport?.findingsCount} potential vulnerabilities across your codebase.
+                    The most critical issues include SQL injection vulnerabilities in the authentication module and
+                    cross-site scripting (XSS) risks in user input handling. Immediate attention is recommended for
+                    high-severity findings to maintain security compliance.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <Button variant="ghost" onClick={() => setPreviewReport(null)}>
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => handleDownload(previewReport || { id: "", title: "", projectName: "", scanDate: "", findingsCount: 0, generatedOn: "", status: "ready" })}
+                    className="bg-[#ea580c] text-white hover:bg-[#ea580c]/90">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </div>

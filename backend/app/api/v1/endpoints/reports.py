@@ -347,14 +347,15 @@ async def get_report_status(
 @router.get("/{report_id}/download")
 async def download_report(
     report_id: int,
+    format: str = "html",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Download a generated report"""
+    """Download a generated report as HTML or PDF (if available with WeasyPrint)"""
     try:
         import base64
         from app.models.scan import Scan
-        
+
         # Get report
         report = db.query(Report).filter(Report.id == report_id).first()
         if not report:
@@ -362,31 +363,53 @@ async def download_report(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Report not found"
             )
-        
+
         # Get HTML content from metadata
         if not report.report_metadata or 'html_content' not in report.report_metadata:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Report content not found"
             )
-        
+
         # Decode HTML content
         html_content = base64.b64decode(report.report_metadata['html_content']).decode('utf-8')
-        
-        # Determine filename
+
+        # Determine filename root
         scan = db.query(Scan).filter(Scan.id == report.scan_id).first()
-        filename = f"security_report_{scan.name if scan else report.id}.html".replace(" ", "_")
-        
-        # Return HTML file
+        name_root = f"security_report_{scan.name if scan else report.id}".replace(" ", "_")
+
+        if format.lower() == "pdf":
+            # Try to render PDF with WeasyPrint
+            try:
+                import weasyprint
+            except ImportError:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="PDF export requires WeasyPrint. Please ask the server admin to install 'weasyprint'."
+                )
+            # Convert HTML to PDF
+            pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
+            pdf_filename = f"{name_root}.pdf"
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f"attachment; filename={pdf_filename}",
+                    "Content-Length": str(len(pdf_bytes))
+                }
+            )
+
+        # Default: Download HTML
+        html_filename = f"{name_root}.html"
         return Response(
             content=html_content,
             media_type="text/html",
             headers={
-                "Content-Disposition": f"attachment; filename={filename}",
+                "Content-Disposition": f"attachment; filename={html_filename}",
                 "Content-Length": str(len(html_content))
             }
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:

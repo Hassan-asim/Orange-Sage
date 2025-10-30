@@ -22,6 +22,8 @@ export function RegisterContent() {
     email: "",
     password: "",
     confirmPassword: "",
+    cnic: "",
+    phoneNumber: ""
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,6 +58,8 @@ export function RegisterContent() {
         username: formData.userName,
         password: formData.password,
         full_name: formData.fullName,
+        cnic: formData.cnic,
+        phone_number: formData.phoneNumber
       })
 
       if (response.error) {
@@ -162,6 +166,31 @@ export function RegisterContent() {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  disabled={loading}
+                  className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cnic" className="text-foreground font-medium">CNIC</Label>
+                <Input
+                  id="cnic"
+                  type="text"
+                  placeholder="Enter your CNIC (e.g. 12345-1234567-1)"
+                  value={formData.cnic}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber" className="text-foreground font-medium">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  placeholder="Enter your phone number"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
                   disabled={loading}
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring h-11"
                 />

@@ -57,6 +57,19 @@ class ReportsService {
     window.URL.revokeObjectURL(downloadUrl);
   }
 
+  async fetchReportHtml(id: number): Promise<string> {
+    const url = `${API_CONFIG.ENDPOINTS.REPORTS}/${id}/download?format=html`;
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(getApiUrl(url), {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      throw new Error('Could not fetch report HTML.');
+    }
+    return await response.text();
+  }
+
   async deleteReport(id: number): Promise<ApiResponse<void>> {
     return await apiClient.delete<void>(`${API_CONFIG.ENDPOINTS.REPORTS}/${id}`)
   }

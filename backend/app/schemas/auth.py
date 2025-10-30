@@ -13,6 +13,8 @@ class UserCreate(BaseModel):
     username: str
     password: str = Field(..., min_length=6)
     full_name: Optional[str] = None
+    cnic: Optional[str] = None
+    phone_number: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -27,6 +29,8 @@ class UserResponse(BaseModel):
     email: str
     username: str
     full_name: Optional[str]
+    cnic: Optional[str] = None
+    phone_number: Optional[str] = None
     is_active: bool
     created_at: datetime
     

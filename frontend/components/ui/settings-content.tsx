@@ -174,6 +174,33 @@ export function SettingsContent() {
                         />
                         <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                       </div>
+
+                      {/* CNIC field */}
+                      {user?.cnic && (
+                        <div className="space-y-2">
+                          <Label htmlFor="cnic" className="text-foreground">CNIC</Label>
+                          <Input
+                            id="cnic"
+                            value={user.cnic}
+                            readOnly
+                            className="bg-background border-border text-foreground"
+                            disabled
+                          />
+                        </div>
+                      )}
+                      {/* Phone Number field */}
+                      {user?.phone_number && (
+                        <div className="space-y-2">
+                          <Label htmlFor="phoneNumber" className="text-foreground">Phone Number</Label>
+                          <Input
+                            id="phoneNumber"
+                            value={user.phone_number}
+                            readOnly
+                            className="bg-background border-border text-foreground"
+                            disabled
+                          />
+                        </div>
+                      )}
                     </>
                   )}
 

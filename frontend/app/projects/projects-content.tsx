@@ -119,7 +119,21 @@ function ProjectCard({ project }: { project: Project }) {
   )
 }
 
-function ProjectTableRow({ project }: { project: Project }) {
+function ProjectTableRow({ project, loadProjects }: { project: Project, loadProjects: () => void }) {
+  const { toast } = useToast()
+  const router = useRouter()
+
+  const handleDeleteProject = async (project: Project) => {
+    if (!window.confirm(`Are you sure you want to delete project "${project.name}"? This cannot be undone.`)) return;
+    try {
+      await projectsService.deleteProject(Number(project.id));
+      toast({ title: 'Deleted', description: `${project.name} was deleted.`, variant: 'default' });
+      loadProjects();
+    } catch(e:any) {
+      toast({ title: 'Error', description: e.message || 'Could not delete the project.', variant: 'destructive' });
+    }
+  };
+
   return (
     <TableRow className="border-border">
       <TableCell className="font-medium text-foreground">
@@ -145,7 +159,7 @@ function ProjectTableRow({ project }: { project: Project }) {
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <Eye className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:text-red-600">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500 hover:text-red-600" onClick={() => handleDeleteProject(project)}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -462,7 +476,7 @@ export function ProjectsContent() {
                 </TableHeader>
                 <TableBody>
                   {filteredProjects.map((project) => (
-                    <ProjectTableRow key={project.id} project={project} />
+                    <ProjectTableRow key={project.id} project={project} loadProjects={loadProjects} />
                   ))}
                 </TableBody>
               </Table>

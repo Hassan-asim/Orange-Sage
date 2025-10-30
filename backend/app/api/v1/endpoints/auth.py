@@ -44,7 +44,9 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         email=user_data.email,
         username=user_data.username,
         hashed_password=hashed_password,
-        full_name=user_data.full_name
+        full_name=user_data.full_name,
+        cnic=getattr(user_data, "cnic", None),
+        phone_number=getattr(user_data, "phone_number", None)
     )
     
     try:
@@ -63,6 +65,8 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         username=user.username,
         full_name=user.full_name,
+        cnic=user.cnic,
+        phone_number=user.phone_number,
         is_active=user.is_active,
         created_at=user.created_at
     )
@@ -102,33 +106,30 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Get current user information"""
+    """Get current user profile"""
+    from app.utils.auth import decode_access_token
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = decode_access_token(token)
         email: str = payload.get("sub")
         if email is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
-            )
+            raise credentials_exception
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials"
-        )
-    
+        raise credentials_exception
     user = db.query(User).filter(User.email == email).first()
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
-    
+        raise credentials_exception
     return UserResponse(
         id=user.id,
         email=user.email,
         username=user.username,
         full_name=user.full_name,
+        cnic=user.cnic,
+        phone_number=user.phone_number,
         is_active=user.is_active,
         created_at=user.created_at
     )

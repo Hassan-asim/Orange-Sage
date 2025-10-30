@@ -10,6 +10,8 @@ export interface RegisterData {
   username: string
   password: string
   full_name?: string
+  cnic?: string
+  phone_number?: string
 }
 
 export interface LoginData {
@@ -22,6 +24,8 @@ export interface User {
   email: string
   username: string
   full_name?: string
+  cnic?: string
+  phone_number?: string
   is_active: boolean
   created_at: string
 }

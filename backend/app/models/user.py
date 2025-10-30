@@ -23,6 +23,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
+    cnic = Column(String(30), nullable=True)
+    phone_number = Column(String(30), nullable=True)
     
     # Relationships
     projects = relationship("Project", back_populates="owner")
