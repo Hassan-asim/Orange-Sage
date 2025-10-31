@@ -26,7 +26,18 @@ from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics import renderPDF
 
 # HTML to PDF conversion
-import weasyprint
+try:
+    import weasyprint
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError) as e:
+    # WeasyPrint requires GTK+ libraries which are not available by default on Windows
+    # The application will work fine without it, using ReportLab for PDF generation instead
+    WEASYPRINT_AVAILABLE = False
+    weasyprint = None
+    # Only log at debug level to avoid alarming users
+    logger_temp = logging.getLogger(__name__)
+    logger_temp.debug(f"WeasyPrint not available: {e}")
+
 from jinja2 import Template
 
 logger = logging.getLogger(__name__)

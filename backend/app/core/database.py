@@ -2,15 +2,18 @@
 Database configuration for Orange Sage
 """
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
 # Create database engine
 engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
+    settings.DATABASE_URI,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URI else {},
+    pool_pre_ping=True,  # Verify connections before use
+    pool_recycle=300,    # Recycle connections every 5 minutes
+    echo=False           # Set to True for SQL debugging
 )
 
 # Create session factory
@@ -42,3 +45,17 @@ async def init_db():
     
     # Create all tables
     Base.metadata.create_all(bind=engine)
+
+    # Lightweight SQLite migration: add missing columns for users
+    try:
+      if "sqlite" in settings.DATABASE_URI:
+        with engine.connect() as conn:
+          cols = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+          existing = {row[1] for row in cols}  # row[1] is column name
+          if "cnic" not in existing:
+            conn.execute(text("ALTER TABLE users ADD COLUMN cnic VARCHAR(30)"))
+          if "phone_number" not in existing:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_number VARCHAR(30)"))
+    except Exception:
+      # Do not crash startup if migration fails; logs will show model mismatch
+      pass

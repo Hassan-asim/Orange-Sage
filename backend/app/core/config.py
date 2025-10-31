@@ -6,7 +6,9 @@ import os
 from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import validator
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class Settings(BaseSettings):
     """Application settings"""
@@ -16,20 +18,24 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     DEBUG: bool = False
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = int(os.getenv("PORT", "8080"))
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 180
     ALGORITHM: str = "HS256"
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]
-    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1"]
+    ALLOWED_ORIGINS: List[str] = ["*"]  # Allow all origins for Cloud Run
+    ALLOWED_HOSTS: List[str] = ["*"]  # Allow all hosts for Cloud Run
     
     # Database
-    DATABASE_URL: str = "sqlite:///./orange_sage.db"
-    
+    DATABASE_URI: Optional[str] = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("DATABASE_URI")
+        or os.getenv("DATABSE_URI")  # legacy typo support
+        or "sqlite:////app/orange_sage.db"
+    )
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
     
@@ -37,7 +43,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     DEFAULT_LLM_MODEL: str = "gpt-4o-mini"
-    FALLBACK_LLM_MODEL: str = "gemini-1.5-flash"
+    FALLBACK_LLM_MODEL: str = "gemini-2.0-flash-lite"
     
     # Agent Configuration
     MAX_AGENTS_PER_SCAN: int = 10
@@ -78,7 +84,11 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra fields from .env file
 
 
 # Create settings instance
 settings = Settings()
+
+
+

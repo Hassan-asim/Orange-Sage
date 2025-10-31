@@ -37,8 +37,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🚀 Starting Orange Sage Backend API")
     
     # Initialize database
-    await init_db()
-    logger.info("✅ Database initialized")
+    try:
+        await init_db()
+        logger.info("✅ Database initialized")
+    except Exception as e:
+        logger.warning(f"⚠️  Database initialization failed: {e}")
+        logger.info("⚠️  Continuing without database (in-memory mode)")
     
     # Initialize services
     global agent_manager, report_generator
@@ -64,7 +68,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Shutdown
     logger.info("🛑 Shutting down Orange Sage Backend API")
     if agent_manager:
-        await agent_manager.cleanup()
+        try:
+            await agent_manager.cleanup()
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
     logger.info("✅ Cleanup completed")
 
 
@@ -78,19 +85,21 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add middleware
+# Add middleware - CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=settings.ALLOWED_HOSTS
-)
+# TrustedHostMiddleware - only add if not using wildcard
+if settings.ALLOWED_HOSTS != ["*"]:
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.ALLOWED_HOSTS
+    )
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
