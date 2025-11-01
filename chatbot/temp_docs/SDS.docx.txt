@@ -1,0 +1,64 @@
+﻿Software Design Specification (SDS)
+1. Introduction
+1.1 Purpose
+This document provides architectural and component-level design for Orange Sage, describing modules, data models, API contracts, agent architecture, and deployment considerations.
+2. System Architecture
+Overview:
+Orange Sage follows a distributed architecture with the following main components:
+- Frontend (React/Next.js + TypeScript + Tailwind + shadcn/ui)
+- Backend API (FastAPI) exposing /api/v1 endpoints
+- Agents (Python modules) performing pentesting actions
+- Message Broker / Task Queue (Celery + Redis)
+- Database (SQLite local; PostgreSQL production)
+- Object Storage (MinIO for artifacts)
+2.1 Component Interaction Flow
+1. User (frontend) creates a project and target via REST API.
+2. Backend validates and stores the configuration in DB and enqueues a Celery task.
+3. Celery worker picks task and initialises an AI agent via agent_factory.
+4. Agent executes reconnaissance, scanning, exploitation and posts findings back to API.
+5. Backend stores artifacts in MinIO and findings in DB, updates scan status, and notifies UI via WebSocket or polling.
+3. Detailed Component Design
+3.1 Backend Structure (app/)
+- api/v1/endpoints: Route definitions and request/response models (e.g., api.py)
+- core: config.py, config_local.py, database.py, database_local.py, logging_config.py
+- models: ORM models (agent.py, finding.py, project.py, report.py, scan.py, target.py, user.py)
+- schemas: Pydantic schemas for validation (auth.py, project.py, scan.py, target.py)
+- services: Business logic (auth, project management, scanning orchestration)
+- utils: Helper utilities and agent_factory.py for agent instantiation
+3.2 Agent Design (pentesting_agent.py)
+The PentestingAgent class implements phases: parse_target, reconnaissance, vulnerability_scanning, exploitation, post_exploitation, and report generation. The agent uses requests sessions, a payload library for classic attack vectors (SQLi, XSS, command injection, path traversal), SSL/TLS analysis, and basic port scanning. Findings are classified by severity and returned to the backend.
+4. Data Model
+Primary entities and key fields:
+- users: id, name, email, role, password_hash
+- projects: id, name, owner_id, created_at, config
+- targets: id, project_id, url, type, config
+- scans: id, project_id, target_id, status, started_at, finished_at
+- findings: id, scan_id, title, description, severity, endpoint, payload, remediation
+- reports: id, scan_id, storage_path, generated_at, format
+5. API Contracts (examples)
+POST /api/v1/scans
+Request JSON:
+{ 'project_id': int, 'target_id': int, 'scan_profile': 'quick'|'full' }
+Response JSON:
+{ 'scan_id': int, 'status': 'queued' }
+6. Security Considerations
+- All actions are logged; sensitive data masked in logs.
+- Agents execute exploit logic in isolated environments (containers) when possible.
+- Access control enforced via JWT and role-based permissions.
+- LLM keys and secrets stored in environment variables, never checked into source control.
+7. Deployment & Operations
+7.1 Local development
+- Use docker-compose to start PostgreSQL/Redis/MinIO or use provided local defaults (SQLite).
+7.2 Production
+- Use managed DB, object storage, and scalable worker pools. Consider Kubernetes manifests for orchestration.
+8. Testing Strategy
+- Unit tests for backend services with pytest
+- Integration tests for API endpoints and Celery tasks
+- Security tests: fuzzing agents, sandboxed exploit verification
+8.1 Sample Test Cases
+- Verify authentication and RBAC enforcement
+- Run a sample scan against a deliberately vulnerable target and validate findings and report generation
+9. Appendices
+- References: OWASP Top 10, CWE database, FastAPI documentation
+- Contact: Project team (see repo README for contributors)
+________________

@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+langchain
+langchain-google-genai
+faiss-cpu
+pypdf
+python-dotenv
