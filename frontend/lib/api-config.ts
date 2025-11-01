@@ -4,28 +4,11 @@
 
 export const API_CONFIG = {
   BASE_URL: (() => {
-    // Hardcode HTTPS backend URL for production
-    const productionUrl = 'https://orange-sage-backend-cpd4lwaqmq-uc.a.run.app'
-    
-    // Allow override via env var
-    const envUrl = process.env.NEXT_PUBLIC_API_URL
-    
-    // If env var is provided, use it but force HTTPS
-    if (envUrl) {
-      return envUrl.startsWith('http://') ? envUrl.replace(/^http:/, 'https:') : envUrl
+    const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && raw.startsWith('http://')) {
+      return raw.replace(/^http:/, 'https:')
     }
-    
-    // In production build or runtime, use hardcoded HTTPS URL
-    // For local development, check if we're in browser and on localhost
-    if (typeof window !== 'undefined') {
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      if (isLocalhost) {
-        return 'http://localhost:8000'
-      }
-    }
-    
-    // Default to production HTTPS URL (will be used in Cloud Run)
-    return productionUrl
+    return raw
   })(),
   API_VERSION: 'v1',
   ENDPOINTS: {
