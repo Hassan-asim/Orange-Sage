@@ -1,99 +1,110 @@
 # Orange Sage - AI-Powered Cybersecurity Assessment Platform
 
-Orange Sage is a comprehensive web-based cybersecurity assessment platform that leverages AI agents to perform autonomous security testing. it provides a modern web interface for managing security assessments, viewing findings, and generating reports.
+Orange Sage is a comprehensive web-based cybersecurity assessment platform that leverages AI agents to perform autonomous security testing. It provides a modern web interface for managing security assessments, viewing findings, and generating reports.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Docker Desktop** - For running required services
 - **Python 3.11+** - For backend development
 - **Node.js 18+** - For frontend development
 - **Git** - For version control
 
-### 1. Clone and Setup
+### Local Development Setup
+
+#### 1. Backend Setup
 
 ```bash
-git clone <repository-url>
-cd Orange_sage
-```
-
-### 2. Start the Application
-
-```bash
-# Start everything (recommended)
-python start.py
-```
-
-This will:
-- Start PostgreSQL, Redis, and MinIO services
-- Start the backend API server
-- Start the frontend development server
-- Open the application at http://localhost:5173
-
-### 3. Alternative Manual Setup
-
-If you prefer to start components separately:
-
-```bash
-# Start services
-docker-compose up -d
-
-# Start backend (in one terminal)
 cd backend
-python start.py
+pip install -r requirements.txt
 
-# Start frontend (in another terminal)
-cd frontend
+# Create .env file based on env.example
+cp env.example .env
+
+# Update .env with your API keys
+# DATABASE_URL=sqlite:///./orange_sage.db
+# SECRET_KEY=your-secret-key
+# GEMINI_API_KEY=your-gemini-api-key
+
+# Start backend
 python start.py
+# or
+uvicorn app.main:app --reload
 ```
+
+The backend will be available at `http://localhost:8000`
+- API Docs: http://localhost:8000/api/v1/docs
+
+#### 2. Frontend Setup
+
+```bash
+cd frontend
+npm install --legacy-peer-deps
+
+# Start frontend
+npm run dev
+```
+
+The frontend will be available at `http://localhost:3000`
+
+### Demo User
+
+For testing, a demo user is automatically created:
+- **Email**: `user@gmail.com`
+- **Password**: `12345678`
 
 ## 🏗️ Architecture
 
 ### Backend (FastAPI)
 - **Framework**: FastAPI with Uvicorn
-- **Database**: PostgreSQL with SQLAlchemy
-- **Task Queue**: Celery with Redis
-- **LLM Integration**: LiteLLM (OpenAI, Gemini)
-- **Object Storage**: MinIO/S3
+- **Database**: SQLite with Litestream (for persistent storage in production)
+- **LLM Integration**: Google Gemini API
 - **Authentication**: JWT tokens
+- **Deployment**: Google Cloud Run
 
-### Frontend (React)
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
+### Frontend (Next.js)
+- **Framework**: Next.js 14 with React 19
+- **Language**: TypeScript
 - **UI Library**: shadcn/ui with Tailwind CSS
-- **State Management**: React Query
-- **Routing**: React Router
-
-### Services
-- **PostgreSQL**: Primary database
-- **Redis**: Task queue and caching
-- **MinIO**: Object storage for reports and artifacts
+- **Deployment**: Google Cloud Run
 
 ## 📁 Project Structure
 
 ```
-Orange_sage/
+Orange-Sage/
 ├── backend/                 # FastAPI backend
 │   ├── app/
-│   │   ├── api/           # API endpoints
-│   │   ├── core/          # Core configuration
-│   │   ├── models/        # Database models
-│   │   ├── schemas/       # Pydantic schemas
-│   │   ├── services/      # Business logic
-│   │   └── utils/         # Utilities
-│   ├── requirements.txt   # Python dependencies
-│   └── start.py          # Backend startup script
-├── frontend/              # React frontend
-│   ├── src/
-│   │   ├── components/    # UI components
-│   │   ├── pages/        # Page components
-│   │   ├── hooks/        # Custom hooks
-│   │   └── services/     # API services
-│   ├── package.json      # Node dependencies
-│   └── start.py         # Frontend startup script
-├── docker-compose.yml     # Service definitions
-└── start.py              # Main startup script
+│   │   ├── api/            # API endpoints
+│   │   │   └── v1/
+│   │   │       └── endpoints/
+│   │   ├── core/           # Core configuration
+│   │   ├── models/         # SQLAlchemy models
+│   │   ├── schemas/        # Pydantic schemas
+│   │   ├── services/       # Business logic
+│   │   ├── agents/         # AI agent implementations
+│   │   └── utils/          # Utilities
+│   ├── requirements.txt    # Python dependencies
+│   ├── Dockerfile          # Docker image for Cloud Run
+│   ├── litestream.yml      # Litestream configuration
+│   └── start_with_litestream.sh  # Startup script
+├── frontend/               # Next.js frontend
+│   ├── app/               # Next.js app directory
+│   │   ├── (auth)/       # Authentication pages
+│   │   ├── dashboard/    # Dashboard page
+│   │   ├── projects/     # Projects page
+│   │   ├── scans/        # Scans page
+│   │   ├── findings/     # Findings page
+│   │   ├── reports/      # Reports page
+│   │   └── settings/     # Settings page
+│   ├── components/       # React components
+│   ├── lib/              # Utilities and services
+│   ├── Dockerfile        # Docker image for Cloud Run
+│   └── package.json      # Node dependencies
+├── .github/
+│   └── workflows/        # GitHub Actions CI/CD
+│       ├── deploy-backend.yml
+│       └── deploy-frontend.yml
+└── README.md
 ```
 
 ## 🔧 Configuration
@@ -103,44 +114,49 @@ Orange_sage/
 Create `backend/.env` based on `backend/env.example`:
 
 ```env
-# API Keys (Required)
-OPENAI_API_KEY=sk-your-openai-key-here
-GEMINI_API_KEY=AIzaSyC-your-gemini-key-here
-
-# Database
-DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/orange_sage
-ASYNC_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/orange_sage
+# Database (SQLite for local, Cloud Run uses Litestream + GCS)
+DATABASE_URL=sqlite:///./orange_sage.db
 
 # Security
-SECRET_KEY=your-super-secret-key-here
+SECRET_KEY=your-super-secret-key-here-change-in-production
+
+# API Keys
+GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
 ### Frontend Configuration
 
-Create `frontend/.env` based on `frontend/env.example`:
-
-```env
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-```
+The frontend automatically detects the backend URL:
+- **Local development**: Uses `http://localhost:8000`
+- **Production**: Uses HTTPS backend URL from `NEXT_PUBLIC_API_URL` environment variable
+- **Runtime**: Automatically converts HTTP to HTTPS if the page is served over HTTPS (prevents mixed content errors)
 
 ## 🚀 Features
 
 ### Core Features
-- **User Authentication** - Secure login and registration
-- **Project Management** - Organize security assessments
+- **User Authentication** - Secure login and registration with JWT tokens
+- **Project Management** - Create and manage security assessment projects
 - **Target Management** - Add URLs, repositories, or file uploads
-- **Scan Orchestration** - AI agent coordination
-- **Real-time Monitoring** - Live scan progress and logs
-- **Findings Management** - Vulnerability tracking and triage
-- **Report Generation** - PDF, DOCX, and HTML reports
-- **Settings Management** - User preferences and integrations
+- **Scan Orchestration** - Comprehensive security scans with AI agents
+- **Real-time Monitoring** - View scan progress and status
+- **Findings Management** - Track vulnerabilities with severity levels
+- **Report Generation** - Generate detailed PDF and HTML reports
+- **Settings Management** - User profile and preferences
+- **AI Chatbot** - Gemini-powered assistant for app and cybersecurity questions
 
-### AI Agent Capabilities
-- **Autonomous Testing** - Self-directed security assessments
-- **Multi-agent Coordination** - Specialized agents for different tasks
-- **Real-time Adaptation** - Dynamic strategy adjustment
-- **Comprehensive Coverage** - Black-box and white-box testing
-- **Vulnerability Detection** - OWASP Top 10 and beyond
+### Security Testing Capabilities
+- **SQL Injection Detection**
+- **XSS (Cross-Site Scripting) Detection**
+- **IDOR (Insecure Direct Object Reference) Detection**
+- **Security Headers Analysis**
+- **Weak Password Policy Detection**
+- **Sensitive Data Exposure Detection**
+- **Outdated Library Detection**
+- **Rate Limiting Analysis**
+- **DNS Security Checks**
+- **Email Spoofing Detection**
+- **Phishing Detection**
+- **Cloud Storage Security Analysis**
 
 ## 🛠️ Development
 
@@ -149,71 +165,97 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+
+# Start with auto-reload
+uvicorn app.main:app --reload --port 8000
 ```
 
 ### Frontend Development
 
 ```bash
 cd frontend
-npm install
+npm install --legacy-peer-deps
+
+# Start development server
 npm run dev
 ```
 
 ### Database Migrations
 
-```bash
-cd backend
-alembic revision --autogenerate -m "Description"
-alembic upgrade head
+The backend automatically handles schema migrations on startup for SQLite. When new columns are added to models, they are automatically added to the database.
+
+## 🚀 Production Deployment
+
+### Google Cloud Run Deployment
+
+Orange Sage is deployed to Google Cloud Run using GitHub Actions.
+
+#### Prerequisites
+1. Google Cloud Project with billing enabled
+2. Google Cloud Service Account with required permissions
+3. GitHub repository with secrets configured
+
+#### Required GitHub Secrets
+
+```
+GCP_SA_KEY              # Google Cloud Service Account JSON key
+BACKEND_URL             # HTTPS URL of deployed backend (e.g., https://orange-sage-backend-xxx.run.app)
+GCP_SERVICE_ACCOUNT_EMAIL # Service account email
+DATABASE_URL            # SQLite database path (sqlite:////app/orange_sage.db)
+SECRET_KEY              # JWT secret key
+GEMINI_API_KEY          # Google Gemini API key
+LITESTREAM_GCS_BUCKET   # GCS bucket name for Litestream database replication
 ```
 
-## 🐳 Docker Services
+#### Deployment Process
 
-The application uses Docker Compose for local development:
+1. **Automatic Deployment**: Pushes to `main` branch automatically trigger deployment
+   - Backend: Deploys on changes to `backend/**`
+   - Frontend: Deploys on changes to `frontend/**`
 
-- **PostgreSQL** (port 5432) - Database
-- **Redis** (port 6379) - Task queue
-- **MinIO** (ports 9000, 9001) - Object storage
+2. **Manual Deployment**: Use GitHub Actions "Run workflow" button
+
+3. **Litestream Setup**: 
+   - Create a GCS bucket for database replication
+   - Set `LITESTREAM_GCS_BUCKET` secret to bucket name
+   - Litestream automatically backs up and restores the SQLite database
+
+#### Backend Deployment
+
+- **Container**: Docker image built from `backend/Dockerfile`
+- **Platform**: Google Cloud Run
+- **Database**: SQLite with Litestream replication to GCS
+- **Startup**: Uses `start_with_litestream.sh` to restore database and start FastAPI
+
+#### Frontend Deployment
+
+- **Container**: Docker image built from `frontend/Dockerfile`
+- **Platform**: Google Cloud Run
+- **Build-time**: `NEXT_PUBLIC_API_URL` is set from `BACKEND_URL` secret
+- **Runtime**: Automatically uses HTTPS if page is served over HTTPS
+
+### Post-Deployment
+
+1. **Initialize Demo User**: The demo user is automatically created on first startup
+2. **Test Registration**: Users can register new accounts
+3. **Test Scans**: Create projects and run comprehensive scans
+4. **Generate Reports**: Download PDF or HTML reports
 
 ## 📊 API Documentation
 
-Once the backend is running, visit:
-- **Swagger UI**: http://localhost:8000/api/v1/docs
-- **ReDoc**: http://localhost:8000/api/v1/redoc
+Once the backend is running:
+- **Swagger UI**: `http://localhost:8000/api/v1/docs` (local) or `https://your-backend-url.run.app/api/v1/docs` (production)
+- **ReDoc**: `http://localhost:8000/api/v1/redoc`
 
 ## 🔒 Security
 
-- **JWT Authentication** - Secure token-based auth
-- **Role-based Access** - Admin, Developer, Auditor roles
+- **JWT Authentication** - Secure token-based authentication
+- **Password Hashing** - Argon2 password hashing
 - **Input Validation** - Pydantic schema validation
-- **SQL Injection Protection** - SQLAlchemy ORM
-- **CORS Configuration** - Controlled cross-origin requests
-
-## 🚀 Deployment
-
-### Production Deployment
-
-1. **Backend**: Deploy to cloud provider (AWS, GCP, Azure)
-2. **Frontend**: Deploy to static hosting (Vercel, Netlify)
-3. **Database**: Use managed PostgreSQL service
-4. **Storage**: Use managed S3-compatible storage
-5. **Queue**: Use managed Redis service
-
-### Environment Variables
-
-Set the following environment variables in production:
-
-```env
-# Backend
-SECRET_KEY=your-production-secret-key
-DATABASE_URL=postgresql://user:pass@host:port/db
-OPENAI_API_KEY=sk-your-production-key
-GEMINI_API_KEY=AIzaSyC-your-production-key
-
-# Frontend
-VITE_API_BASE_URL=https://your-api-domain.com/api/v1
-```
+- **SQL Injection Protection** - SQLAlchemy ORM with parameterized queries
+- **CORS Configuration** - Properly configured for Cloud Run deployment
+- **HTTPS Enforcement** - Frontend automatically uses HTTPS in production
+- **Database Encryption** - SQLite database with Litestream backups
 
 ## 🤝 Contributing
 
@@ -231,14 +273,15 @@ This project is licensed under the MIT License.
 
 For support and questions:
 - Create an issue on GitHub
-- Check the documentation
-- Review the API documentation
+- Check the API documentation at `/api/v1/docs`
+- Review the codebase documentation
 
 ## 🔮 Roadmap
 
-- [ ] Kubernetes deployment manifests
-- [ ] Advanced reporting features
+- [ ] Enhanced AI agent capabilities
+- [ ] Advanced reporting features with charts and graphs
 - [ ] Integration with CI/CD pipelines
-- [ ] Mobile application
+- [ ] Webhook support for scan notifications
 - [ ] Advanced analytics dashboard
 - [ ] Custom agent development framework
+- [ ] Multi-tenant support
